@@ -406,6 +406,111 @@ function orphanSlotReferences(slots, field, deletedIds) {
     });
 }
 
+/**
+ * Validate timetable data structure for file import
+ * @param {Object} data - Data object to validate
+ * @returns {boolean} True if valid, false otherwise
+ */
+function validateTimetableData(data) {
+    if (!data || typeof data !== 'object') {
+        return false;
+    }
+
+    // Check required top-level keys
+    const requiredKeys = ['periods', 'teachers', 'rooms', 'studentGroups', 'subjects', 'slots'];
+    for (const key of requiredKeys) {
+        if (!(key in data)) {
+            return false;
+        }
+    }
+
+    // Validate periods array
+    if (!Array.isArray(data.periods) || data.periods.length === 0) {
+        return false;
+    }
+    if (!data.periods.every(p => Number.isInteger(p) && p > 0)) {
+        return false;
+    }
+
+    // Validate entity objects have id and name
+    for (const entityType of ['teachers', 'rooms', 'studentGroups', 'subjects']) {
+        const entities = data[entityType];
+        if (typeof entities !== 'object' || entities === null) {
+            return false;
+        }
+        for (const [id, entity] of Object.entries(entities)) {
+            if (!entity || typeof entity.id !== 'string' || typeof entity.name !== 'string') {
+                return false;
+            }
+        }
+    }
+
+    // Validate slots array
+    if (!Array.isArray(data.slots)) {
+        return false;
+    }
+    for (const slot of data.slots) {
+        if (!slot || !slot.id || !slot.day || !slot.period || !slot.teacherId) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Export timetable data to a JSON file download
+ * @returns {boolean} True if export initiated, false if no data
+ */
+function exportToFile() {
+    const data = loadData();
+    if (!data) {
+        return false;
+    }
+
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const filename = `schedulae-timetable-${getDateString()}.json`;
+
+    // Create download link and trigger
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    return true;
+}
+
+/**
+ * Import timetable data from a JSON string
+ * @param {string} jsonString - JSON string to parse and import
+ * @returns {Object} { success: boolean, error?: string }
+ */
+function importFromFile(jsonString) {
+    let data;
+
+    // Try to parse JSON
+    try {
+        data = JSON.parse(jsonString);
+    } catch (err) {
+        return { success: false, error: 'Invalid file: Not valid JSON' };
+    }
+
+    // Validate structure
+    if (!validateTimetableData(data)) {
+        return { success: false, error: 'Invalid file: Missing required data structure' };
+    }
+
+    // Save to LocalStorage
+    if (saveData(data)) {
+        return { success: true };
+    } else {
+        return { success: false, error: 'Failed to save data' };
+    }
+}
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -427,6 +532,8 @@ if (typeof module !== 'undefined' && module.exports) {
         hasValidationErrors,
         findEntityIdByName,
         syncEntities,
-        orphanSlotReferences
+        orphanSlotReferences,
+        validateTimetableData,
+        importFromFile
     };
 }

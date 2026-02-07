@@ -73,9 +73,16 @@ function initDataEntryPage() {
     const subjectsInput = $('#subjects-input');
     const cancelButton = $('#cancel-button');
     const mainViewLink = $('#nav-main-view-from-entry');
+    const saveFileButton = $('#save-file-button');
 
     // Clear any existing error messages
     clearFieldErrors();
+    clearFileStatus();
+
+    // Update Save to File button state
+    if (saveFileButton) {
+        saveFileButton.disabled = !dataExists;
+    }
 
     if (dataExists) {
         // Populate periods (and disable field since changing periods after data exists is not supported)
@@ -256,6 +263,9 @@ function setupDataEntryEventListeners() {
     const form = $('#data-entry-form');
     const cancelButton = $('#cancel-button');
     const mainViewLink = $('#nav-main-view-from-entry');
+    const saveFileButton = $('#save-file-button');
+    const loadFileButton = $('#load-file-button');
+    const fileInput = $('#file-input');
 
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
@@ -270,6 +280,106 @@ function setupDataEntryEventListeners() {
             e.preventDefault();
             showPage('main-view');
         });
+    }
+
+    // File operation event listeners
+    if (saveFileButton) {
+        saveFileButton.addEventListener('click', handleSaveToFile);
+    }
+
+    if (loadFileButton) {
+        loadFileButton.addEventListener('click', handleLoadFromFile);
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelected);
+    }
+}
+
+/**
+ * Handle Save to File button click
+ * Exports current timetable data to a JSON file
+ */
+function handleSaveToFile() {
+    if (exportToFile()) {
+        showFileStatus('Timetable saved successfully', false);
+    }
+}
+
+/**
+ * Handle Load from File button click
+ * Opens file picker for JSON file selection
+ */
+function handleLoadFromFile() {
+    const fileInput = $('#file-input');
+    if (fileInput) {
+        fileInput.value = ''; // Reset to allow re-selecting same file
+        fileInput.click();
+    }
+}
+
+/**
+ * Handle file selection from file picker
+ * @param {Event} event - Change event from file input
+ */
+async function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await file.text();
+
+        // Check if data already exists and ask for confirmation
+        if (hasExistingData()) {
+            if (!confirm('Loading this file will replace your current timetable. Continue?')) {
+                return;
+            }
+        }
+
+        // Import the file
+        const result = importFromFile(text);
+
+        if (result.success) {
+            showFileStatus('Timetable loaded successfully', false);
+            // Reinitialize the page to show loaded data
+            initDataEntryPage();
+        } else {
+            showFileStatus(result.error, true);
+        }
+    } catch (err) {
+        showFileStatus('Invalid file: Not valid JSON', true);
+    }
+}
+
+/**
+ * Show status message in the file operations section
+ * @param {string} message - Message to display
+ * @param {boolean} isError - True for error styling, false for success
+ */
+function showFileStatus(message, isError) {
+    const statusEl = $('#file-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = 'file-status ' + (isError ? 'error' : 'success');
+
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (statusEl.textContent === message) {
+                statusEl.textContent = '';
+                statusEl.className = 'file-status';
+            }
+        }, 3000);
+    }
+}
+
+/**
+ * Clear the file status message
+ */
+function clearFileStatus() {
+    const statusEl = $('#file-status');
+    if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.className = 'file-status';
     }
 }
 

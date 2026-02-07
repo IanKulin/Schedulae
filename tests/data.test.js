@@ -18,7 +18,9 @@ const {
     hasValidationErrors,
     findEntityIdByName,
     syncEntities,
-    orphanSlotReferences
+    orphanSlotReferences,
+    validateTimetableData,
+    importFromFile
 } = require('../public/js/data.js');
 
 describe('DAYS constant', () => {
@@ -424,5 +426,137 @@ describe('orphanSlotReferences', () => {
         const result = orphanSlotReferences(slots, 'subjectId', ['1']);
 
         assert.strictEqual(result[0].subjectId, null);
+    });
+});
+
+// Sprint 10 Tests - File Operations
+
+describe('validateTimetableData', () => {
+    const validData = {
+        periods: [1, 2, 3, 4, 5, 6],
+        teachers: { '1': { id: '1', name: 'Ms Smith' } },
+        studentGroups: { '1': { id: '1', name: '9A' } },
+        rooms: { '1': { id: '1', name: 'Room 12' } },
+        subjects: { '1': { id: '1', name: 'Mathematics' } },
+        slots: [
+            { id: 'slot_monday_1_1', day: 'Monday', period: 1, teacherId: '1' }
+        ]
+    };
+
+    it('should return true for valid data', () => {
+        assert.strictEqual(validateTimetableData(validData), true);
+    });
+
+    it('should return false for null or non-object', () => {
+        assert.strictEqual(validateTimetableData(null), false);
+        assert.strictEqual(validateTimetableData(undefined), false);
+        assert.strictEqual(validateTimetableData('string'), false);
+        assert.strictEqual(validateTimetableData(123), false);
+    });
+
+    it('should return false for missing required keys', () => {
+        const missingPeriods = { ...validData };
+        delete missingPeriods.periods;
+        assert.strictEqual(validateTimetableData(missingPeriods), false);
+
+        const missingTeachers = { ...validData };
+        delete missingTeachers.teachers;
+        assert.strictEqual(validateTimetableData(missingTeachers), false);
+
+        const missingSlots = { ...validData };
+        delete missingSlots.slots;
+        assert.strictEqual(validateTimetableData(missingSlots), false);
+    });
+
+    it('should return false for invalid periods', () => {
+        // Not an array
+        assert.strictEqual(validateTimetableData({ ...validData, periods: 'not array' }), false);
+        // Empty array
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [] }), false);
+        // Non-integer values
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [1.5, 2] }), false);
+        // Negative values
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [-1, 2] }), false);
+        // Zero
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [0, 1] }), false);
+    });
+
+    it('should return false for invalid entity objects', () => {
+        // Entity missing id
+        const missingId = {
+            ...validData,
+            teachers: { '1': { name: 'Ms Smith' } }
+        };
+        assert.strictEqual(validateTimetableData(missingId), false);
+
+        // Entity missing name
+        const missingName = {
+            ...validData,
+            teachers: { '1': { id: '1' } }
+        };
+        assert.strictEqual(validateTimetableData(missingName), false);
+
+        // Entity type is not an object
+        const notObject = {
+            ...validData,
+            rooms: 'not an object'
+        };
+        assert.strictEqual(validateTimetableData(notObject), false);
+    });
+
+    it('should return false for invalid slots', () => {
+        // Slots not an array
+        assert.strictEqual(validateTimetableData({ ...validData, slots: 'not array' }), false);
+
+        // Slot missing required fields
+        const missingSlotId = {
+            ...validData,
+            slots: [{ day: 'Monday', period: 1, teacherId: '1' }]
+        };
+        assert.strictEqual(validateTimetableData(missingSlotId), false);
+
+        const missingSlotDay = {
+            ...validData,
+            slots: [{ id: 'slot1', period: 1, teacherId: '1' }]
+        };
+        assert.strictEqual(validateTimetableData(missingSlotDay), false);
+
+        const missingSlotPeriod = {
+            ...validData,
+            slots: [{ id: 'slot1', day: 'Monday', teacherId: '1' }]
+        };
+        assert.strictEqual(validateTimetableData(missingSlotPeriod), false);
+
+        const missingSlotTeacher = {
+            ...validData,
+            slots: [{ id: 'slot1', day: 'Monday', period: 1 }]
+        };
+        assert.strictEqual(validateTimetableData(missingSlotTeacher), false);
+    });
+
+    it('should allow empty entities and slots', () => {
+        const emptyEntities = {
+            periods: [1, 2, 3],
+            teachers: {},
+            studentGroups: {},
+            rooms: {},
+            subjects: {},
+            slots: []
+        };
+        assert.strictEqual(validateTimetableData(emptyEntities), true);
+    });
+});
+
+describe('importFromFile', () => {
+    it('should return error for invalid JSON', () => {
+        const result = importFromFile('not valid json');
+        assert.strictEqual(result.success, false);
+        assert.strictEqual(result.error, 'Invalid file: Not valid JSON');
+    });
+
+    it('should return error for invalid structure', () => {
+        const result = importFromFile(JSON.stringify({ foo: 'bar' }));
+        assert.strictEqual(result.success, false);
+        assert.strictEqual(result.error, 'Invalid file: Missing required data structure');
     });
 });

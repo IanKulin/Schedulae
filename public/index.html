@@ -18,6 +18,17 @@
             </header>
 
             <main class="data-entry-content">
+                <!-- File Operations Section -->
+                <section class="file-operations">
+                    <h3>File Operations</h3>
+                    <div class="file-operations-buttons">
+                        <button type="button" id="save-file-button" class="btn btn-secondary" disabled>Save to File</button>
+                        <button type="button" id="load-file-button" class="btn btn-secondary">Load from File</button>
+                    </div>
+                    <input type="file" id="file-input" accept=".json" class="page-hidden">
+                    <div id="file-status" class="file-status"></div>
+                </section>
+
                 <h2>Data Entry</h2>
                 <p class="form-description">Enter the basic information for your timetable. Each entity should be on its own line.</p>
 

@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { debounce } = require('../public/js/utils.js');
+const { debounce, getDateString } = require('../public/js/utils.js');
 
 describe('debounce', () => {
     it('should delay function execution', async () => {
@@ -47,5 +47,20 @@ describe('debounce', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         assert.strictEqual(callCount, 1, 'Function should only be called once');
+    });
+});
+
+describe('getDateString', () => {
+    it('should return date in YYYY-MM-DD format', () => {
+        const result = getDateString();
+        // Check format matches YYYY-MM-DD pattern
+        assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(result), `Expected YYYY-MM-DD format, got: ${result}`);
+    });
+
+    it('should return current date', () => {
+        const result = getDateString();
+        const now = new Date();
+        const expected = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        assert.strictEqual(result, expected);
     });
 });
