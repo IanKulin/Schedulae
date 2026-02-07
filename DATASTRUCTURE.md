@@ -30,7 +30,7 @@ It is the single source of truth for timetable data.
 The following entities are stored separately and referenced by ID:
 - Teacher
 - Room
-- Class
+- StudentGroup
 - Subject
 
 ---
@@ -46,7 +46,7 @@ The following entities are stored separately and referenced by ID:
   "period": 1,
   "teacherId": "teacher_12",
   "roomId": "room_12",
-  "classId": "class_9A",
+  "studentGroupId": "studentGroup_9A",
   "subjectId": "subject_math"
 }
 ```
@@ -60,12 +60,12 @@ The following entities are stored separately and referenced by ID:
 | period      | number  | Yes      | Period number within the day |
 | teacherId  | string  | No       | ID of the assigned Teacher |
 | roomId     | string  | No       | ID of the assigned Room |
-| classId    | string  | No       | ID of the assigned Class |
+| studentGroupId | string  | No       | ID of the assigned StudentGroup |
 | subjectId  | string  | No       | ID of the assigned Subject |
 
 ### Notes
 
-- Any of `teacherId`, `roomId`, `classId`, or `subjectId` may be null or omitted during timetable construction.
+- Any of `teacherId`, `roomId`, `studentGroupId`, or `subjectId` may be null or omitted during timetable construction.
 - A Slot is uniquely identified by `(day, period)` in the context of a specific timetable.
 - The `id` field exists to support editing, persistence, and referencing.
 
@@ -91,11 +91,11 @@ The following entities are stored separately and referenced by ID:
 }
 ```
 
-### Class
+### StudentGroup
 
 ```json
 {
-  "id": "class_9A",
+  "id": "studentGroup_9A",
   "name": "9A"
 }
 ```
@@ -122,7 +122,7 @@ The timetable is represented as a collection of Slots plus entity definitions.
 
   "teachers": { },
   "rooms": { },
-  "classes": { },
+  "studentGroups": { },
   "subjects": { },
 
   "slots": [ ]
@@ -149,10 +149,10 @@ To generate a timetable for a Teacher:
 2. Group by `day`
 3. Sort by `period`
 
-### Class Timetable View
+### StudentGroup Timetable View
 
-To generate a timetable for a Class:
-1. Filter Slots by `classId`
+To generate a timetable for a StudentGroup:
+1. Filter Slots by `studentGroupId`
 2. Group by `day`
 3. Sort by `period`
 
@@ -165,7 +165,7 @@ These rules are enforced at the application level, not by the data structure its
 Examples:
 - A Teacher may not be assigned to more than one Slot with the same day and period
 - A Room may not be assigned to more than one Slot with the same day and period
-- A Class may not be assigned to more than one Slot with the same day and period
+- A StudentGroup may not be assigned to more than one Slot with the same day and period
 
 Slots that violate these rules are considered invalid.
 
