@@ -4,16 +4,17 @@
 
 This document defines the core data structures for a simple timetabling web application.
 
-The system models a timetable as a collection of independent **Slots**.  
-Each Slot represents a single teaching period on a specific day.
+The system models a timetable as a collection of independent **Slots**.
+Each Slot represents a single teaching period on a specific day for a specific teacher.
 
-All timetable views (by Room, Teacher, or Class) are derived from the same Slot data.
+All timetable views (by Room, Teacher, or StudentGroup) are derived from the same Slot data.
 
 The MVP assumes:
-- A fixed set of Days
-- A fixed set of Periods per day
-- At most one Teacher, Room, Class, and Subject per Slot
-- Fields may be undefined during timetable construction
+- Fixed days: Monday through Friday (hardcoded)
+- A configurable number of Periods per day (set once at initial setup)
+- At most one Teacher, Room, StudentGroup, and Subject per Slot
+- Slots are pre-created for all Teacher/Day/Period combinations
+- StudentGroup, Room, and Subject fields may be unassigned during timetable construction
 
 ---
 
@@ -21,7 +22,7 @@ The MVP assumes:
 
 ### Slot (Atomic Unit)
 
-A **Slot** represents one scheduled teaching period on one day.
+A **Slot** represents one scheduled teaching period on one day for a particular teacher.
 
 It is the single source of truth for timetable data.
 
@@ -41,33 +42,35 @@ The following entities are stored separately and referenced by ID:
 
 ```json
 {
-  "id": "slot_001",
+  "id": "slot_monday_1_1",
   "day": "Monday",
   "period": 1,
-  "teacherId": "teacher_12",
-  "roomId": "room_12",
-  "studentGroupId": "studentGroup_9A",
-  "subjectId": "subject_math"
+  "teacherId": "1",
+  "studentGroupId": "1",
+  "roomId": "1",
+  "subjectId": "1"
 }
 ```
 
 ### Field Definitions
 
-| Field        | Type    | Required | Description |
-|-------------|---------|----------|-------------|
-| id          | string  | Yes      | Unique identifier for the Slot |
-| day         | string  | Yes      | Day of the week (from a fixed set) |
-| period      | number  | Yes      | Period number within the day |
-| teacherId  | string  | No       | ID of the assigned Teacher |
-| roomId     | string  | No       | ID of the assigned Room |
+| Field          | Type    | Required | Description |
+|----------------|---------|----------|-------------|
+| id             | string  | Yes      | Unique identifier derived from day, period, and teacherId |
+| day            | string  | Yes      | Day of the week (Monday-Friday) |
+| period         | number  | Yes      | Period number within the day |
+| teacherId      | string  | Yes      | ID of the assigned Teacher |
 | studentGroupId | string  | No       | ID of the assigned StudentGroup |
-| subjectId  | string  | No       | ID of the assigned Subject |
+| roomId         | string  | No       | ID of the assigned Room |
+| subjectId      | string  | No       | ID of the assigned Subject |
 
 ### Notes
 
-- Any of `teacherId`, `roomId`, `studentGroupId`, or `subjectId` may be null or omitted during timetable construction.
-- A Slot is uniquely identified by `(day, period)` in the context of a specific timetable.
-- The `id` field exists to support editing, persistence, and referencing.
+- A Slot is uniquely identified by `(day, period, teacherId)`.
+- The `id` field is derived from these three values: `slot_{day}_{period}_{teacherId}` (e.g., `slot_monday_1_1`).
+- `teacherId` is always set (slots are pre-created for every teacher/day/period combination).
+- `studentGroupId`, `roomId`, and `subjectId` may be null/unassigned during timetable construction.
+- Slots with all optional fields unassigned are valid and represent free periods for that teacher.
 
 ---
 
@@ -77,16 +80,18 @@ The following entities are stored separately and referenced by ID:
 
 ```json
 {
-  "id": "teacher_12",
+  "id": "1",
   "name": "Ms Smith"
 }
 ```
+
+Entity IDs are auto-generated incrementing integers (stored as strings). Each entity type maintains its own ID sequence starting at 1.
 
 ### Room
 
 ```json
 {
-  "id": "room_12",
+  "id": "1",
   "name": "Room 12"
 }
 ```
@@ -95,7 +100,7 @@ The following entities are stored separately and referenced by ID:
 
 ```json
 {
-  "id": "studentGroup_9A",
+  "id": "1",
   "name": "9A"
 }
 ```
@@ -104,7 +109,7 @@ The following entities are stored separately and referenced by ID:
 
 ```json
 {
-  "id": "subject_math",
+  "id": "1",
   "name": "Mathematics"
 }
 ```
@@ -115,9 +120,10 @@ The following entities are stored separately and referenced by ID:
 
 The timetable is represented as a collection of Slots plus entity definitions.
 
+Days are hardcoded as Monday through Friday. The number of periods is set once during initial setup and cannot be changed.
+
 ```json
 {
-  "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   "periods": [1, 2, 3, 4, 5, 6],
 
   "teachers": { },
@@ -129,45 +135,46 @@ The timetable is represented as a collection of Slots plus entity definitions.
 }
 ```
 
+### Slot Pre-Creation
+
+When the timetable is first saved, slots are pre-created for every combination of:
+- Teacher (all defined teachers)
+- Day (Monday through Friday)
+- Period (1 through N, where N is the configured number of periods)
+
+This means for 3 teachers and 6 periods: 3 × 5 × 6 = 90 slots are created.
+
 ---
 
 ## Derived Views (Not Stored)
 
 Timetable grids are **derived views**, not stored structures.
 
+Days are always displayed in order: Monday, Tuesday, Wednesday, Thursday, Friday.
+
 ### Room Timetable View
 
 To generate a timetable for a Room:
 1. Filter Slots by `roomId`
-2. Group by `day`
-3. Sort by `period`
+2. Display in a grid with days as columns and periods as rows
 
 ### Teacher Timetable View
 
 To generate a timetable for a Teacher:
 1. Filter Slots by `teacherId`
-2. Group by `day`
-3. Sort by `period`
+2. Display in a grid with days as columns and periods as rows
 
 ### StudentGroup Timetable View
 
 To generate a timetable for a StudentGroup:
 1. Filter Slots by `studentGroupId`
-2. Group by `day`
-3. Sort by `period`
+2. Display in a grid with days as columns and periods as rows
 
 ---
 
 ## Validation Rules (Logical Constraints)
 
-These rules are enforced at the application level, not by the data structure itself.
-
-Examples:
-- A Teacher may not be assigned to more than one Slot with the same day and period
-- A Room may not be assigned to more than one Slot with the same day and period
-- A StudentGroup may not be assigned to more than one Slot with the same day and period
-
-Slots that violate these rules are considered invalid.
+The MVP is not enforcing or alerting to any conflicts.
 
 ---
 
@@ -178,10 +185,10 @@ The following are intentionally out of scope for the MVP but may affect future v
 - Double or block periods
 - Variable-length periods
 - Team teaching (multiple teachers per Slot)
-- Multiple classes in one Slot
+- Multiple StudentGroups in one Slot
 - Week rotations (e.g. Week A / Week B)
 - Non-teaching periods (lunch, assembly)
+- Configurable days (non-Monday-Friday schedules)
+- Changing the number of periods after initial setup
 
 The current model is designed to evolve without breaking existing data.
-
----

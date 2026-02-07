@@ -37,14 +37,15 @@ The application uses the data model defined in `DATASTRUCTURE.md` with the follo
 - **Subject** - Academic subject or course
 
 ### 2.2 Fixed Configuration
-- **Days:** Fixed as Monday through Friday (5 days)
-- **Periods:** Configurable per timetable (default: 6 periods per day)
+- **Days:** Hardcoded as Monday through Friday (5 days)
+- **Periods:** Configurable at initial setup only (default: 6 periods per day). Cannot be changed after first save.
 
 ### 2.3 Data Structure
 See `DATASTRUCTURE.md` for complete data model specification. Key points:
-- Slot is the atomic unit
+- Slot is the atomic unit, uniquely identified by (day, period, teacherId)
+- Slots are pre-created for all Teacher/Day/Period combinations on first save
 - Entities stored separately and referenced by ID
-- All entity references in Slots are optional
+- Teacher is always assigned to a slot; StudentGroup, Room, and Subject are optional
 
 ---
 
@@ -82,6 +83,7 @@ The page contains a form with the following sections:
 - **Input:** Integer input field
 - **Default value:** 6
 - **Validation:** Must be a positive integer
+- **Note:** This field is disabled after initial setup (when data already exists in LocalStorage)
 
 #### 4.2.2 Teachers
 - **Label:** "Teachers"
@@ -134,7 +136,9 @@ The page contains a form with the following sections:
 
 **Save Button:**
 - Validates all inputs
-- Generates unique IDs for all entities
+- Generates unique IDs for new entities (by scanning existing IDs for highest number)
+- For first-time save: Pre-creates slots for all Teacher/Day/Period combinations (with optional fields empty)
+- For subsequent saves: Creates slots for any new teachers added
 - Saves to LocalStorage
 - Returns to Main View (or shows Main View for first-time users)
 
@@ -155,6 +159,7 @@ The page contains a form with the following sections:
 - Display validation errors inline near the relevant field
 - Prevent save until all validation passes
 - Trim whitespace from entity names before validation
+- Empty lines in text areas are ignored (not treated as errors)
 
 ### 4.5 Entity Management
 
@@ -164,8 +169,9 @@ The page contains a form with the following sections:
 - Changes take effect immediately after save
 
 #### 4.5.2 Editing Entities
-- Users can modify entity names
-- ID remains unchanged (only name updates)
+- Entity matching is by **exact name match only**
+- If a name is changed, the old entity is treated as deleted and the new name creates a new entity with a new ID
+- This means renaming "Ms Smith" to "Ms Smyth" will orphan slots that referenced "Ms Smith"
 
 #### 4.5.3 Deleting Entities
 - Remove line from text area to delete entity
@@ -202,13 +208,15 @@ Primary interface for creating and editing the timetable. Shows all possible Slo
 
 **Example for 3 teachers, 2 days, 2 periods:**
 ```
-                | Ms Smith        | Mr Jones        | Dr Patel
-----------------|-----------------|-----------------|------------------
-Monday - Per 1  | [dropdowns]     | [dropdowns]     | [dropdowns]
-Monday - Per 2  | [dropdowns]     | [dropdowns]     | [dropdowns]
-Tuesday - Per 1 | [dropdowns]     | [dropdowns]     | [dropdowns]
-Tuesday - Per 2 | [dropdowns]     | [dropdowns]     | [dropdowns]
+          | Ms Smith        | Mr Jones        | Dr Patel
+----------|-----------------|-----------------|------------------
+Mon - P1  | [dropdowns]     | [dropdowns]     | [dropdowns]
+Mon - P2  | [dropdowns]     | [dropdowns]     | [dropdowns]
+Tue - P1  | [dropdowns]     | [dropdowns]     | [dropdowns]
+Tue - P2  | [dropdowns]     | [dropdowns]     | [dropdowns]
 ```
+
+**Day abbreviations:** Mon, Tue, Wed, Thu, Fri
 
 **Total rows:** 1 (header) + (5 days × N periods)  
 **Total columns:** 1 (row header) + M teachers
@@ -241,9 +249,10 @@ Each cell contains **three dropdown menus, stacked vertically:**
 - Each dropdown independent
 - User can select any combination (including all blank)
 - No restrictions or warnings about conflicts
+- Setting a dropdown back to blank clears that field but keeps the slot (slots are never deleted)
 
 #### 5.4.3 Initial State
-- All dropdowns show blank/unassigned by default
+- All dropdowns show blank/unassigned by default (slots are pre-created with optional fields empty)
 - Previously saved selections appear when page loads
 
 ### 5.5 Visual Layout
@@ -328,21 +337,22 @@ Teacher Timetables
 ### 6.5 Individual Timetable Grid
 
 **Grid Structure:**
-- **Columns:** Days (Monday through Friday)
-- **Rows:** Periods (1 through N)
+- **Columns:** Days (Mon, Tue, Wed, Thu, Fri)
+- **Rows:** Periods (P1 through PN)
 - **Cells:** Display assigned entities
+- **Format:** Same scrollable grid format as Main View, but smaller (5 columns vs many teachers)
 
 **Layout example for Ms Smith:**
 ```
-         | Monday     | Tuesday    | Wednesday  | Thursday   | Friday
----------|------------|------------|------------|------------|------------
-Period 1 | 9A         | 10B        |            | 9A         | 10A
-         | Room 12    | Science Lab|            | Room 12    | Room 15
-         | Maths      | Science    |            | Maths      | English
----------|------------|------------|------------|------------|------------
-Period 2 | 9B         |            | 9A         |            |
-         | Room 14    |            | Gym        |            |
-         | English    |            | PE         |            |
+     | Mon        | Tue        | Wed        | Thu        | Fri
+-----|------------|------------|------------|------------|------------
+P1   | 9A         | 10B        |            | 9A         | 10A
+     | Room 12    | Science Lab|            | Room 12    | Room 15
+     | Maths      | Science    |            | Maths      | English
+-----|------------|------------|------------|------------|------------
+P2   | 9B         |            | 9A         |            |
+     | Room 14    |            | Gym        |            |
+     | English    |            | PE         |            |
 ```
 
 ### 6.6 Cell Content by View Type
@@ -374,8 +384,8 @@ For each entity's timetable:
 3. Sort by period
 4. Display only matching slots
 
-**Example:** Teacher "Ms Smith" (id: teacher_001)
-- Find all Slots where `teacherId === "teacher_001"`
+**Example:** Teacher "Ms Smith" (id: "1")
+- Find all Slots where `teacherId === "1"`
 - Display those slots in day/period grid
 - All other cells remain empty
 
@@ -388,9 +398,14 @@ For each entity's timetable:
 
 ### 6.9 Navigation
 
-**Each timetable page includes:**
+**Each individual timetable grid includes:**
 - "Back to [Teacher/StudentGroup/Room] List" link
 - "Back to Main View" link in header
+
+**Grid display:**
+- Uses the same scrollable grid format as Main View
+- Sticky headers for days (top) and periods (left)
+- Smaller overall size (5 day columns vs many teacher columns)
 
 ---
 
@@ -418,52 +433,53 @@ For each entity's timetable:
 **JSON Structure:**
 ```json
 {
-  "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   "periods": [1, 2, 3, 4, 5, 6],
   "teachers": {
-    "teacher_001": { "id": "teacher_001", "name": "Ms Smith" }
+    "1": { "id": "1", "name": "Ms Smith" }
   },
   "studentGroups": {
-    "studentGroup_001": { "id": "studentGroup_001", "name": "9A" }
+    "1": { "id": "1", "name": "9A" }
   },
   "rooms": {
-    "room_001": { "id": "room_001", "name": "Room 12" }
+    "1": { "id": "1", "name": "Room 12" }
   },
   "subjects": {
-    "subject_001": { "id": "subject_001", "name": "Mathematics" }
+    "1": { "id": "1", "name": "Mathematics" }
   },
   "slots": [
     {
-      "id": "slot_001",
+      "id": "slot_monday_1_1",
       "day": "Monday",
       "period": 1,
-      "teacherId": "teacher_001",
-      "studentGroupId": "studentGroup_001",
-      "roomId": "room_001",
-      "subjectId": "subject_001"
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "1",
+      "subjectId": "1"
     }
   ]
 }
 ```
 
+**Note:** Days are hardcoded as `["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]` and not stored in the data structure.
+
 ### 7.3 ID Generation
 
 **Requirements:**
 - IDs must be unique within their entity type
-- IDs must be deterministic for same entity name
-- IDs should be human-readable (for debugging)
 
-**Suggested format:**
-- Teachers: `teacher_001`, `teacher_002`, ...
-- StudentGroups: `studentGroup_001`, `studentGroup_002`, ...
-- Rooms: `room_001`, `room_002`, ...
-- Subjects: `subject_001`, `subject_002`, ...
-- Slots: `slot_001`, `slot_002`, ...
+**Entity ID format:**
+- Auto-incrementing integers stored as strings: `"1"`, `"2"`, `"3"`, ...
+- Each entity type (Teacher, Room, StudentGroup, Subject) maintains its own sequence starting at 1
 
-**Generation approach:**
-- Use counter-based IDs
-- Maintain highest ID number in LocalStorage
+**Slot ID format:**
+- Derived from day, period, and teacherId: `slot_{day}_{period}_{teacherId}`
+- Example: `slot_monday_1_1`
+- Day is lowercase in the ID
+
+**Entity ID generation approach:**
+- Scan existing entities of the same type for the highest numeric ID
 - Increment for new entities
+- No separate counter storage required
 
 ### 7.4 Error Handling
 
@@ -542,10 +558,11 @@ For each entity's timetable:
 **No validation or conflict detection in MVP**
 
 The following are known issues but intentionally not addressed in MVP:
-- Teacher double-booking (same teacher in two slots at same time)
 - Room double-booking (same room assigned to two slots at same time)
 - StudentGroup double-booking (same group in two slots at same time)
-- Incomplete slots (slots with some but not all fields assigned)
+- Incomplete slots (slots with some but not all optional fields assigned)
+
+Note: Teacher double-booking is prevented by the data model (each teacher has exactly one slot per day/period).
 
 ### 9.2 Future Implementation
 
@@ -567,6 +584,8 @@ The following features are explicitly excluded from MVP:
 - Variable-length periods
 - Week A / Week B rotations
 - Non-teaching periods (lunch, assembly, break)
+- Changing number of periods after initial setup
+- Configurable days (non-Monday-Friday schedules)
 
 ### 10.2 Advanced Entity Features
 - Team teaching (multiple teachers per slot)
