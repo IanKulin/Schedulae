@@ -2,6 +2,20 @@
  * Schedulae - Main Application Logic
  */
 
+// Create debounced save function for auto-save (500ms delay)
+let debouncedSave;
+
+/**
+ * Save current data to LocalStorage
+ * Called by the debounced auto-save mechanism
+ * @param {Object} data - TimetableData object to save
+ */
+function saveChanges(data) {
+    if (!saveData(data)) {
+        console.error('Auto-save failed');
+    }
+}
+
 /**
  * Show a specific page and hide all others
  * @param {string} pageId - ID of the page to show (without 'page-' prefix)
@@ -43,6 +57,7 @@ function initDataEntryPage() {
     const roomsInput = $('#rooms-input');
     const subjectsInput = $('#subjects-input');
     const cancelButton = $('#cancel-button');
+    const mainViewLink = $('#nav-main-view-from-entry');
 
     // Clear any existing error messages
     clearFieldErrors();
@@ -64,8 +79,9 @@ function initDataEntryPage() {
         // Populate subjects
         subjectsInput.value = entitiesToText(data.subjects);
 
-        // Show cancel button when data exists
+        // Show cancel button and Main View link when data exists
         cancelButton.classList.remove('page-hidden');
+        if (mainViewLink) mainViewLink.classList.remove('page-hidden');
     } else {
         // Reset form to defaults
         periodsInput.value = 6;
@@ -75,8 +91,9 @@ function initDataEntryPage() {
         roomsInput.value = '';
         subjectsInput.value = '';
 
-        // Hide cancel button for first-time users
+        // Hide cancel button and Main View link for first-time users
         cancelButton.classList.add('page-hidden');
+        if (mainViewLink) mainViewLink.classList.add('page-hidden');
     }
 }
 
@@ -223,6 +240,7 @@ function handleFormSubmit(event) {
 function setupDataEntryEventListeners() {
     const form = $('#data-entry-form');
     const cancelButton = $('#cancel-button');
+    const mainViewLink = $('#nav-main-view-from-entry');
 
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
@@ -230,6 +248,13 @@ function setupDataEntryEventListeners() {
 
     if (cancelButton) {
         cancelButton.addEventListener('click', handleCancel);
+    }
+
+    if (mainViewLink) {
+        mainViewLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('main-view');
+        });
     }
 }
 
@@ -405,6 +430,7 @@ function renderMainViewGrid(data) {
             // Row header (day + period)
             const rowHeader = document.createElement('div');
             rowHeader.className = 'grid-cell grid-row-header';
+            rowHeader.dataset.day = day;
             rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - P${period}</span>`;
             grid.appendChild(rowHeader);
 
@@ -457,10 +483,8 @@ function handleDropdownChange(event) {
     if (slot) {
         slot[field] = newValue;
 
-        // Save immediately (auto-save with debouncing will be added in Sprint 6)
-        if (!saveData(data)) {
-            console.error('Failed to save data after dropdown change');
-        }
+        // Use debounced auto-save (500ms delay)
+        debouncedSave(data);
     } else {
         console.error('Slot not found:', slotId);
     }
@@ -473,6 +497,9 @@ function setupMainViewEventListeners() {
     const dataEntryLink = $('#nav-data-entry');
     const emptyStateLink = $('#empty-state-link');
     const grid = $('#timetable-grid');
+    const teacherTimetablesLink = $('#nav-teacher-timetables');
+    const studentGroupTimetablesLink = $('#nav-studentgroup-timetables');
+    const roomTimetablesLink = $('#nav-room-timetables');
 
     if (dataEntryLink) {
         dataEntryLink.addEventListener('click', (e) => {
@@ -488,6 +515,28 @@ function setupMainViewEventListeners() {
         });
     }
 
+    // Derived view navigation links
+    if (teacherTimetablesLink) {
+        teacherTimetablesLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('teachers');
+        });
+    }
+
+    if (studentGroupTimetablesLink) {
+        studentGroupTimetablesLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('studentGroups');
+        });
+    }
+
+    if (roomTimetablesLink) {
+        roomTimetablesLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('rooms');
+        });
+    }
+
     // Event delegation for dropdown changes
     if (grid) {
         grid.addEventListener('change', handleDropdownChange);
@@ -495,9 +544,52 @@ function setupMainViewEventListeners() {
 }
 
 /**
+ * Show the derived view index page for a specific entity type
+ * @param {string} entityType - Type of entity: 'teachers', 'studentGroups', 'rooms'
+ */
+function showDerivedViewIndex(entityType) {
+    // This will be fully implemented in Sprint 7
+    // For now, show the derived views page with a placeholder
+    showPage('derived-views');
+
+    const container = $('#page-derived-views');
+    if (container) {
+        const titles = {
+            'teachers': 'Teacher Timetables',
+            'studentGroups': 'Class Timetables',
+            'rooms': 'Room Timetables'
+        };
+        container.innerHTML = `
+            <header class="page-header">
+                <h1>Schedulae</h1>
+                <nav class="nav-links">
+                    <a href="#" id="nav-back-to-main">Back to Main View</a>
+                </nav>
+            </header>
+            <main class="derived-view-content">
+                <h2>${titles[entityType] || 'Timetables'}</h2>
+                <p class="coming-soon">This feature will be available in a future update.</p>
+            </main>
+        `;
+
+        // Add back navigation listener
+        const backLink = $('#nav-back-to-main');
+        if (backLink) {
+            backLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showPage('main-view');
+            });
+        }
+    }
+}
+
+/**
  * Initialize the application
  */
 function initApp() {
+    // Initialize debounced auto-save (500ms delay)
+    debouncedSave = debounce(saveChanges, 500);
+
     // Set up event listeners
     setupDataEntryEventListeners();
     setupMainViewEventListeners();

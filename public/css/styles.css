@@ -66,6 +66,11 @@ h1 {
     text-decoration: underline;
 }
 
+.nav-separator {
+    color: #ccc;
+    margin: 0 5px;
+}
+
 /* Data Entry Form */
 .data-entry-content {
     background: #fff;
@@ -334,4 +339,40 @@ h1 {
 /* When dropdown has a selection, show slightly different style */
 .cell-dropdown:not(:invalid) {
     background: #fff;
+}
+
+/* Derived Views */
+.derived-view-content {
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.derived-view-content h2 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.coming-soon {
+    color: #666;
+    font-style: italic;
+    padding: 40px 0;
+    text-align: center;
+}
+
+/* Day group shading - alternating background for each day's periods */
+.grid-data-cell[data-day="Tuesday"],
+.grid-data-cell[data-day="Thursday"] {
+    background-color: #fafafa;
+}
+
+.grid-data-cell[data-day="Tuesday"]:hover,
+.grid-data-cell[data-day="Thursday"]:hover {
+    background-color: #f5f5f5;
+}
+
+.grid-row-header[data-day="Tuesday"],
+.grid-row-header[data-day="Thursday"] {
+    background-color: #f5f5f5;
 }
