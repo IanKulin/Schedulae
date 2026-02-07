@@ -6,6 +6,21 @@
 let debouncedSave;
 
 /**
+ * Escape HTML special characters to prevent XSS
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Save current data to LocalStorage
  * Called by the debounced auto-save mechanism
  * @param {Object} data - TimetableData object to save
@@ -421,6 +436,7 @@ function renderMainViewGrid(data) {
         const header = document.createElement('div');
         header.className = 'grid-cell grid-header';
         header.textContent = teacher.name;
+        header.title = teacher.name; // Show full name on hover for truncated text
         grid.appendChild(header);
     }
 
@@ -600,6 +616,16 @@ function showDerivedViewIndex(entityType) {
 }
 
 /**
+ * Get the active state class for navigation links based on entity type
+ * @param {string} currentType - Currently displayed entity type
+ * @param {string} linkType - Link entity type to check
+ * @returns {string} 'nav-active' or empty string
+ */
+function getNavActiveClass(currentType, linkType) {
+    return currentType === linkType ? 'nav-active' : '';
+}
+
+/**
  * Render the derived view index page
  * @param {string} entityType - Type of entity
  * @param {Object} entities - Entities object from TimetableData
@@ -616,7 +642,7 @@ function renderDerivedViewIndex(entityType, entities, config) {
     if (hasEntities) {
         entityListHtml = '<ul class="entity-list">';
         for (const [id, entity] of sortedEntities) {
-            entityListHtml += `<li><a href="#" class="entity-link" data-entity-type="${entityType}" data-entity-id="${id}">${entity.name}</a></li>`;
+            entityListHtml += `<li><a href="#" class="entity-link" data-entity-type="${entityType}" data-entity-id="${id}" title="${escapeHtml(entity.name)}">${escapeHtml(entity.name)}</a></li>`;
         }
         entityListHtml += '</ul>';
     } else {
@@ -627,7 +653,11 @@ function renderDerivedViewIndex(entityType, entities, config) {
         <header class="page-header">
             <h1>Schedulae</h1>
             <nav class="nav-links">
-                <a href="#" id="nav-back-to-main">Back to Main View</a>
+                <a href="#" id="nav-back-to-main-from-index">Main View</a>
+                <span class="nav-separator">|</span>
+                <a href="#" id="nav-teacher-timetables-from-index" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
+                <a href="#" id="nav-studentgroup-timetables-from-index" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
+                <a href="#" id="nav-room-timetables-from-index" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
         <main class="derived-view-content">
@@ -636,12 +666,73 @@ function renderDerivedViewIndex(entityType, entities, config) {
         </main>
     `;
 
-    // Add back navigation listener
-    const backLink = $('#nav-back-to-main');
-    if (backLink) {
-        backLink.addEventListener('click', (e) => {
+    // Add navigation listeners
+    setupDerivedViewNavigation(entityType);
+}
+
+/**
+ * Set up navigation event listeners for derived views
+ * @param {string} currentEntityType - Currently displayed entity type (for index pages)
+ */
+function setupDerivedViewNavigation(currentEntityType) {
+    // Back to main view
+    const backToMainLinks = $$('#nav-back-to-main-from-index, #nav-back-to-main-from-individual');
+    backToMainLinks.forEach(link => {
+        if (link) {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                showPage('main-view');
+            });
+        }
+    });
+
+    // Derived view navigation links (from index pages)
+    const teacherLink = $('#nav-teacher-timetables-from-index');
+    if (teacherLink && !teacherLink.classList.contains('nav-active')) {
+        teacherLink.addEventListener('click', (e) => {
             e.preventDefault();
-            showPage('main-view');
+            showDerivedViewIndex('teachers');
+        });
+    }
+
+    const studentGroupLink = $('#nav-studentgroup-timetables-from-index');
+    if (studentGroupLink && !studentGroupLink.classList.contains('nav-active')) {
+        studentGroupLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('studentGroups');
+        });
+    }
+
+    const roomLink = $('#nav-room-timetables-from-index');
+    if (roomLink && !roomLink.classList.contains('nav-active')) {
+        roomLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('rooms');
+        });
+    }
+
+    // Derived view navigation links (from individual pages)
+    const teacherLinkIndiv = $('#nav-teacher-timetables-from-individual');
+    if (teacherLinkIndiv && !teacherLinkIndiv.classList.contains('nav-active')) {
+        teacherLinkIndiv.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('teachers');
+        });
+    }
+
+    const studentGroupLinkIndiv = $('#nav-studentgroup-timetables-from-individual');
+    if (studentGroupLinkIndiv && !studentGroupLinkIndiv.classList.contains('nav-active')) {
+        studentGroupLinkIndiv.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('studentGroups');
+        });
+    }
+
+    const roomLinkIndiv = $('#nav-room-timetables-from-individual');
+    if (roomLinkIndiv && !roomLinkIndiv.classList.contains('nav-active')) {
+        roomLinkIndiv.addEventListener('click', (e) => {
+            e.preventDefault();
+            showDerivedViewIndex('rooms');
         });
     }
 
@@ -711,13 +802,16 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
         <header class="page-header">
             <h1>Schedulae</h1>
             <nav class="nav-links">
-                <a href="#" id="nav-back-to-index">Back to ${config.title}</a>
+                <a href="#" id="nav-back-to-main-from-individual">Main View</a>
                 <span class="nav-separator">|</span>
-                <a href="#" id="nav-back-to-main-from-individual">Back to Main View</a>
+                <a href="#" id="nav-teacher-timetables-from-individual" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
+                <a href="#" id="nav-studentgroup-timetables-from-individual" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
+                <a href="#" id="nav-room-timetables-from-individual" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
         <main class="derived-view-content">
-            <h2>${entity.name}</h2>
+            <h2>${escapeHtml(entity.name)}</h2>
+            <p class="breadcrumb"><a href="#" id="nav-back-to-index">&larr; Back to ${config.title}</a></p>
             <div class="individual-grid-wrapper">
                 <div id="individual-timetable-grid" class="individual-timetable-grid"></div>
             </div>
@@ -737,13 +831,7 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
         });
     }
 
-    const backToMainLink = $('#nav-back-to-main-from-individual');
-    if (backToMainLink) {
-        backToMainLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('main-view');
-        });
-    }
+    setupDerivedViewNavigation(entityType);
 }
 
 /**
@@ -824,13 +912,13 @@ function createIndividualCellContent(slot, data, config) {
             const entityType = ENTITY_FIELD_MAP[field];
             const entity = data[entityType] && data[entityType][entityId];
             if (entity) {
-                line.innerHTML = `<span class="cell-label">${label}:</span> <span class="cell-value">${entity.name}</span>`;
+                line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value" title="${escapeHtml(entity.name)}">${escapeHtml(entity.name)}</span>`;
                 hasContent = true;
             } else {
-                line.innerHTML = `<span class="cell-label">${label}:</span> <span class="cell-value empty">\u2014</span>`;
+                line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value empty">\u2014</span>`;
             }
         } else {
-            line.innerHTML = `<span class="cell-label">${label}:</span> <span class="cell-value empty">\u2014</span>`;
+            line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value empty">\u2014</span>`;
         }
 
         fragment.appendChild(line);
