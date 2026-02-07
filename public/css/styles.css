@@ -298,3 +298,40 @@ h1 {
 .grid-cell:not(.grid-header):not(.grid-row-header):not(.grid-corner):hover {
     background: #f8f9fa;
 }
+
+/* Data Cell Layout */
+.grid-data-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+}
+
+/* Cell Dropdowns */
+.cell-dropdown {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    appearance: menulist;
+}
+
+.cell-dropdown:hover {
+    border-color: #bbb;
+}
+
+.cell-dropdown:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* When dropdown has a selection, show slightly different style */
+.cell-dropdown:not(:invalid) {
+    background: #fff;
+}

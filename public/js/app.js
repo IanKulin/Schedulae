@@ -245,6 +245,98 @@ const DAY_ABBREVIATIONS = {
 };
 
 /**
+ * Get entities sorted by ID (entry order)
+ * @param {Object} entities - Entities object from TimetableData
+ * @returns {Array} Array of [id, entity] pairs sorted by numeric ID
+ */
+function getSortedEntities(entities) {
+    if (!entities) return [];
+    return Object.entries(entities).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
+}
+
+/**
+ * Find a slot for a specific day, period, and teacher
+ * @param {Object} data - TimetableData object
+ * @param {string} day - Day of the week
+ * @param {number} period - Period number
+ * @param {string} teacherId - Teacher ID
+ * @returns {Object|undefined} The slot or undefined if not found
+ */
+function getSlotForCell(data, day, period, teacherId) {
+    return data.slots.find(slot =>
+        slot.day === day &&
+        slot.period === period &&
+        slot.teacherId === teacherId
+    );
+}
+
+/**
+ * Create a dropdown (select element) for a cell
+ * @param {string} type - Type of dropdown: 'studentGroup', 'room', 'subject'
+ * @param {Array} options - Array of [id, entity] pairs
+ * @param {string|null} selectedId - Currently selected entity ID
+ * @param {string} slotId - ID of the slot this dropdown belongs to
+ * @returns {HTMLSelectElement} The created select element
+ */
+function createDropdown(type, options, selectedId, slotId) {
+    const select = document.createElement('select');
+    select.className = 'cell-dropdown';
+    select.dataset.slotId = slotId;
+    select.dataset.field = type + 'Id'; // e.g., 'studentGroupId', 'roomId', 'subjectId'
+
+    // Add blank option first
+    const blankOption = document.createElement('option');
+    blankOption.value = '';
+    blankOption.textContent = '\u2014'; // em-dash
+    select.appendChild(blankOption);
+
+    // Add entity options in entry order
+    for (const [id, entity] of options) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = entity.name;
+        if (id === selectedId) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    }
+
+    return select;
+}
+
+/**
+ * Create the cell content with three dropdowns
+ * @param {Object} data - TimetableData object
+ * @param {Object} slot - The slot object for this cell
+ * @returns {DocumentFragment} Fragment containing the dropdowns
+ */
+function createCellContent(data, slot) {
+    const fragment = document.createDocumentFragment();
+
+    // Get sorted entities for each dropdown
+    const studentGroups = getSortedEntities(data.studentGroups);
+    const rooms = getSortedEntities(data.rooms);
+    const subjects = getSortedEntities(data.subjects);
+
+    // Create StudentGroup dropdown
+    const sgDropdown = createDropdown('studentGroup', studentGroups, slot.studentGroupId, slot.id);
+    sgDropdown.title = 'Student Group';
+    fragment.appendChild(sgDropdown);
+
+    // Create Room dropdown
+    const roomDropdown = createDropdown('room', rooms, slot.roomId, slot.id);
+    roomDropdown.title = 'Room';
+    fragment.appendChild(roomDropdown);
+
+    // Create Subject dropdown
+    const subjectDropdown = createDropdown('subject', subjects, slot.subjectId, slot.id);
+    subjectDropdown.title = 'Subject';
+    fragment.appendChild(subjectDropdown);
+
+    return fragment;
+}
+
+/**
  * Initialize the Main View page
  * Renders the timetable grid or shows empty state
  */
@@ -319,14 +411,58 @@ function renderMainViewGrid(data) {
             // Data cells for each teacher
             for (const [teacherId] of teachers) {
                 const cell = document.createElement('div');
-                cell.className = 'grid-cell';
+                cell.className = 'grid-cell grid-data-cell';
                 cell.dataset.day = day;
                 cell.dataset.period = period;
                 cell.dataset.teacherId = teacherId;
-                // Cell content (dropdowns) will be added in Sprint 5
+
+                // Find the slot for this cell
+                const slot = getSlotForCell(data, day, period, teacherId);
+                if (slot) {
+                    cell.appendChild(createCellContent(data, slot));
+                }
+
                 grid.appendChild(cell);
             }
         }
+    }
+}
+
+/**
+ * Handle dropdown change event
+ * Updates the slot data when a selection is made
+ * @param {Event} event - Change event from dropdown
+ */
+function handleDropdownChange(event) {
+    const select = event.target;
+
+    // Ensure this is a cell dropdown
+    if (!select.classList.contains('cell-dropdown')) {
+        return;
+    }
+
+    const slotId = select.dataset.slotId;
+    const field = select.dataset.field; // e.g., 'studentGroupId'
+    const newValue = select.value || null; // Convert empty string to null
+
+    // Load current data
+    const data = loadData();
+    if (!data) {
+        console.error('No data found when handling dropdown change');
+        return;
+    }
+
+    // Find and update the slot
+    const slot = data.slots.find(s => s.id === slotId);
+    if (slot) {
+        slot[field] = newValue;
+
+        // Save immediately (auto-save with debouncing will be added in Sprint 6)
+        if (!saveData(data)) {
+            console.error('Failed to save data after dropdown change');
+        }
+    } else {
+        console.error('Slot not found:', slotId);
     }
 }
 
@@ -336,6 +472,7 @@ function renderMainViewGrid(data) {
 function setupMainViewEventListeners() {
     const dataEntryLink = $('#nav-data-entry');
     const emptyStateLink = $('#empty-state-link');
+    const grid = $('#timetable-grid');
 
     if (dataEntryLink) {
         dataEntryLink.addEventListener('click', (e) => {
@@ -349,6 +486,11 @@ function setupMainViewEventListeners() {
             e.preventDefault();
             showPage('data-entry');
         });
+    }
+
+    // Event delegation for dropdown changes
+    if (grid) {
+        grid.addEventListener('change', handleDropdownChange);
     }
 }
 
