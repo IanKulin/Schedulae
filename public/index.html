@@ -10,8 +10,60 @@
     <div id="app">
         <!-- Page: Data Entry -->
         <div id="page-data-entry" class="page" data-page="data-entry">
-            <h1>Schedulae</h1>
-            <p>Data Entry Page (Coming in Sprint 2)</p>
+            <header class="page-header">
+                <h1>Schedulae</h1>
+                <nav class="nav-links">
+                    <!-- Navigation will be added in later sprints -->
+                </nav>
+            </header>
+
+            <main class="data-entry-content">
+                <h2>Data Entry</h2>
+                <p class="form-description">Enter the basic information for your timetable. Each entity should be on its own line.</p>
+
+                <form id="data-entry-form" class="data-entry-form">
+                    <!-- Periods -->
+                    <div class="form-group">
+                        <label for="periods-input">Number of Periods per Day</label>
+                        <input type="number" id="periods-input" name="periods" min="1" max="20" value="6">
+                        <span class="field-error" id="periods-error"></span>
+                    </div>
+
+                    <!-- Teachers -->
+                    <div class="form-group">
+                        <label for="teachers-input">Teachers</label>
+                        <textarea id="teachers-input" name="teachers" rows="6" placeholder="Enter one teacher name per line&#10;e.g.&#10;Ms. Smith&#10;Mr. Jones&#10;Dr. Brown"></textarea>
+                        <span class="field-error" id="teachers-error"></span>
+                    </div>
+
+                    <!-- Student Groups -->
+                    <div class="form-group">
+                        <label for="studentgroups-input">Student Groups</label>
+                        <textarea id="studentgroups-input" name="studentGroups" rows="6" placeholder="Enter one student group per line&#10;e.g.&#10;Year 7A&#10;Year 7B&#10;Year 8A"></textarea>
+                        <span class="field-error" id="studentgroups-error"></span>
+                    </div>
+
+                    <!-- Rooms -->
+                    <div class="form-group">
+                        <label for="rooms-input">Rooms</label>
+                        <textarea id="rooms-input" name="rooms" rows="6" placeholder="Enter one room per line&#10;e.g.&#10;Room 101&#10;Science Lab&#10;Music Room"></textarea>
+                        <span class="field-error" id="rooms-error"></span>
+                    </div>
+
+                    <!-- Subjects -->
+                    <div class="form-group">
+                        <label for="subjects-input">Subjects</label>
+                        <textarea id="subjects-input" name="subjects" rows="6" placeholder="Enter one subject per line&#10;e.g.&#10;Mathematics&#10;English&#10;Science"></textarea>
+                        <span class="field-error" id="subjects-error"></span>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" id="save-button" class="btn btn-primary">Save</button>
+                        <button type="button" id="cancel-button" class="btn btn-secondary page-hidden">Cancel</button>
+                    </div>
+                </form>
+            </main>
         </div>
 
         <!-- Page: Main View -->
