@@ -23,6 +23,8 @@ function showPage(pageId) {
     // Run page-specific initialization
     if (pageId === 'data-entry') {
         initDataEntryPage();
+    } else if (pageId === 'main-view') {
+        initMainViewPage();
     }
 }
 
@@ -232,11 +234,131 @@ function setupDataEntryEventListeners() {
 }
 
 /**
+ * Abbreviated day names for display
+ */
+const DAY_ABBREVIATIONS = {
+    "Monday": "Mon",
+    "Tuesday": "Tue",
+    "Wednesday": "Wed",
+    "Thursday": "Thu",
+    "Friday": "Fri"
+};
+
+/**
+ * Initialize the Main View page
+ * Renders the timetable grid or shows empty state
+ */
+function initMainViewPage() {
+    const data = loadData();
+    const emptyState = $('#empty-state');
+    const gridContainer = $('#grid-container');
+
+    // Check if there are any teachers
+    const hasTeachers = data && data.teachers && Object.keys(data.teachers).length > 0;
+
+    if (!hasTeachers) {
+        // Show empty state, hide grid
+        emptyState.classList.remove('page-hidden');
+        gridContainer.classList.add('page-hidden');
+    } else {
+        // Hide empty state, show grid
+        emptyState.classList.add('page-hidden');
+        gridContainer.classList.remove('page-hidden');
+        renderMainViewGrid(data);
+    }
+}
+
+/**
+ * Get teachers sorted by ID (entry order)
+ * @param {Object} teachers - Teachers object from TimetableData
+ * @returns {Array} Array of [id, teacher] pairs sorted by numeric ID
+ */
+function getSortedTeachers(teachers) {
+    return Object.entries(teachers).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
+}
+
+/**
+ * Render the main timetable grid
+ * @param {Object} data - TimetableData object
+ */
+function renderMainViewGrid(data) {
+    const grid = $('#timetable-grid');
+    const teachers = getSortedTeachers(data.teachers);
+    const periods = data.periods;
+    const numTeachers = teachers.length;
+
+    // Clear existing grid content
+    grid.innerHTML = '';
+
+    // Set up grid columns: row header (180px) + teachers (200px each)
+    grid.style.gridTemplateColumns = `180px repeat(${numTeachers}, 200px)`;
+
+    // Create corner cell
+    const corner = document.createElement('div');
+    corner.className = 'grid-cell grid-corner';
+    corner.textContent = '';
+    grid.appendChild(corner);
+
+    // Create header row (teacher names)
+    for (const [, teacher] of teachers) {
+        const header = document.createElement('div');
+        header.className = 'grid-cell grid-header';
+        header.textContent = teacher.name;
+        grid.appendChild(header);
+    }
+
+    // Create data rows (day/period combinations)
+    for (const day of DAYS) {
+        for (const period of periods) {
+            // Row header (day + period)
+            const rowHeader = document.createElement('div');
+            rowHeader.className = 'grid-cell grid-row-header';
+            rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - P${period}</span>`;
+            grid.appendChild(rowHeader);
+
+            // Data cells for each teacher
+            for (const [teacherId] of teachers) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.dataset.day = day;
+                cell.dataset.period = period;
+                cell.dataset.teacherId = teacherId;
+                // Cell content (dropdowns) will be added in Sprint 5
+                grid.appendChild(cell);
+            }
+        }
+    }
+}
+
+/**
+ * Set up event listeners for Main View navigation
+ */
+function setupMainViewEventListeners() {
+    const dataEntryLink = $('#nav-data-entry');
+    const emptyStateLink = $('#empty-state-link');
+
+    if (dataEntryLink) {
+        dataEntryLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('data-entry');
+        });
+    }
+
+    if (emptyStateLink) {
+        emptyStateLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPage('data-entry');
+        });
+    }
+}
+
+/**
  * Initialize the application
  */
 function initApp() {
     // Set up event listeners
     setupDataEntryEventListeners();
+    setupMainViewEventListeners();
 
     // Determine which page to show based on existing data
     if (hasExistingData()) {

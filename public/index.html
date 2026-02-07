@@ -68,8 +68,26 @@
 
         <!-- Page: Main View -->
         <div id="page-main-view" class="page page-hidden" data-page="main-view">
-            <h1>Schedulae</h1>
-            <p>Main View (Coming in Sprint 4)</p>
+            <header class="page-header">
+                <h1>Schedulae</h1>
+                <nav class="nav-links">
+                    <a href="#" id="nav-data-entry">Data Entry</a>
+                    <!-- Derived view links will be added in Sprint 6 -->
+                </nav>
+            </header>
+
+            <main class="main-view-content">
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state page-hidden">
+                    <p>No timetable data found.</p>
+                    <p><a href="#" id="empty-state-link">Go to Data Entry</a> to set up your teachers, rooms, and subjects.</p>
+                </div>
+
+                <!-- Grid Container -->
+                <div id="grid-container" class="grid-wrapper">
+                    <div id="timetable-grid" class="timetable-grid"></div>
+                </div>
+            </main>
         </div>
 
         <!-- Page: Derived Views -->
