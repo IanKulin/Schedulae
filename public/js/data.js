@@ -171,6 +171,28 @@ function getSlotsForDayPeriod(slots, day, period) {
 }
 
 /**
+ * Get slots filtered by entity type and ID
+ * @param {string} entityType - Type: 'teachers', 'studentGroups', 'rooms'
+ * @param {string} entityId - ID of the entity to filter by
+ * @param {Object[]} slots - Array of all slots
+ * @returns {Object[]} Filtered array of slots
+ */
+function getSlotsForEntity(entityType, entityId, slots) {
+    const fieldMap = {
+        'teachers': 'teacherId',
+        'studentGroups': 'studentGroupId',
+        'rooms': 'roomId'
+    };
+
+    const field = fieldMap[entityType];
+    if (!field) {
+        return [];
+    }
+
+    return slots.filter(slot => slot[field] === entityId);
+}
+
+/**
  * Parse textarea text into an array of names
  * Splits by newlines, trims whitespace, filters empty lines
  * @param {string} text - Raw textarea value
@@ -397,6 +419,7 @@ if (typeof module !== 'undefined' && module.exports) {
         getSlotById,
         getSlotsForTeacher,
         getSlotsForDayPeriod,
+        getSlotsForEntity,
         parseTextareaToNames,
         validatePeriods,
         validateEntityNames,

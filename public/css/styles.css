@@ -361,6 +361,130 @@ h1 {
     text-align: center;
 }
 
+/* Entity List */
+.entity-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.entity-list li {
+    padding: 0;
+    margin: 0;
+}
+
+.entity-list .entity-link {
+    display: block;
+    padding: 12px 16px;
+    color: #333;
+    text-decoration: none;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.15s;
+}
+
+.entity-list .entity-link:hover {
+    background-color: #f5f9fc;
+    color: #3498db;
+}
+
+.entity-list li:last-child .entity-link {
+    border-bottom: none;
+}
+
+.no-entities {
+    color: #666;
+    padding: 20px 0;
+}
+
+.no-entities a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.no-entities a:hover {
+    text-decoration: underline;
+}
+
+/* Individual Timetable Grid */
+.individual-grid-wrapper {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-top: 15px;
+    overflow: auto;
+}
+
+.individual-timetable-grid {
+    display: grid;
+    min-width: max-content;
+}
+
+/* Individual Grid Cells */
+.individual-grid-corner {
+    min-height: auto;
+    padding: 10px;
+}
+
+.individual-grid-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 10px 8px;
+    min-height: auto;
+}
+
+.individual-grid-row-header {
+    font-weight: 600;
+    text-align: center;
+    padding: 10px 8px;
+    min-height: auto;
+}
+
+.individual-grid-cell {
+    min-height: 70px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.individual-cell-line {
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.cell-label {
+    color: #888;
+    font-size: 11px;
+}
+
+.cell-value {
+    color: #333;
+}
+
+.cell-value.empty {
+    color: #ccc;
+}
+
+.empty-cell {
+    color: #ccc;
+    text-align: center;
+    display: block;
+}
+
+/* Alternate row shading for individual grid (even periods) */
+.individual-grid-cell[data-period="2"],
+.individual-grid-cell[data-period="4"],
+.individual-grid-cell[data-period="6"],
+.individual-grid-cell[data-period="8"],
+.individual-grid-cell[data-period="10"],
+.individual-grid-cell[data-period="12"],
+.individual-grid-cell[data-period="14"],
+.individual-grid-cell[data-period="16"],
+.individual-grid-cell[data-period="18"],
+.individual-grid-cell[data-period="20"] {
+    background-color: #fafafa;
+}
+
 /* Day group shading - alternating background for each day's periods */
 .grid-data-cell[data-day="Tuesday"],
 .grid-data-cell[data-day="Thursday"] {

@@ -10,6 +10,7 @@ const {
     getSlotById,
     getSlotsForTeacher,
     getSlotsForDayPeriod,
+    getSlotsForEntity,
     parseTextareaToNames,
     validatePeriods,
     validateEntityNames,
@@ -176,6 +177,51 @@ describe('getSlotsForDayPeriod', () => {
 
         assert.strictEqual(filtered.length, 1);
         assert.strictEqual(filtered[0].id, '1');
+    });
+});
+
+describe('getSlotsForEntity', () => {
+    it('should filter slots by teacher ID', () => {
+        const slots = [
+            { id: '1', teacherId: '1', studentGroupId: '1' },
+            { id: '2', teacherId: '2', studentGroupId: '1' },
+            { id: '3', teacherId: '1', studentGroupId: '2' }
+        ];
+        const filtered = getSlotsForEntity('teachers', '1', slots);
+
+        assert.strictEqual(filtered.length, 2);
+        assert.ok(filtered.every(s => s.teacherId === '1'));
+    });
+
+    it('should filter slots by studentGroup ID', () => {
+        const slots = [
+            { id: '1', teacherId: '1', studentGroupId: '1' },
+            { id: '2', teacherId: '2', studentGroupId: '2' },
+            { id: '3', teacherId: '1', studentGroupId: '1' }
+        ];
+        const filtered = getSlotsForEntity('studentGroups', '1', slots);
+
+        assert.strictEqual(filtered.length, 2);
+        assert.ok(filtered.every(s => s.studentGroupId === '1'));
+    });
+
+    it('should filter slots by room ID', () => {
+        const slots = [
+            { id: '1', roomId: '1' },
+            { id: '2', roomId: '2' },
+            { id: '3', roomId: '1' }
+        ];
+        const filtered = getSlotsForEntity('rooms', '1', slots);
+
+        assert.strictEqual(filtered.length, 2);
+        assert.ok(filtered.every(s => s.roomId === '1'));
+    });
+
+    it('should return empty array for unknown entity type', () => {
+        const slots = [{ id: '1', teacherId: '1' }];
+        const filtered = getSlotsForEntity('unknown', '1', slots);
+
+        assert.deepStrictEqual(filtered, []);
     });
 });
 
