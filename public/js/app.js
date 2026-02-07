@@ -487,6 +487,198 @@ function createCellContent(data, slot) {
 }
 
 /**
+ * Create the teacher header with name, toggle button, and defaults panel
+ * @param {string} teacherId - Teacher ID
+ * @param {Object} teacher - Teacher entity object
+ * @param {Object} data - TimetableData object
+ * @returns {DocumentFragment} Fragment containing the header content
+ */
+function createTeacherHeader(teacherId, teacher, data) {
+    const fragment = document.createDocumentFragment();
+
+    // Header row with name and toggle
+    const headerRow = document.createElement('div');
+    headerRow.className = 'teacher-header-row';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'teacher-header-name';
+    nameSpan.textContent = teacher.name;
+    headerRow.appendChild(nameSpan);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'defaults-toggle';
+    toggleBtn.dataset.teacherId = teacherId;
+    toggleBtn.innerHTML = '&#9660;'; // Down arrow
+    toggleBtn.title = 'Toggle defaults panel';
+    headerRow.appendChild(toggleBtn);
+
+    fragment.appendChild(headerRow);
+
+    // Defaults panel (collapsed by default)
+    const panel = createDefaultsPanel(teacherId, data);
+    fragment.appendChild(panel);
+
+    return fragment;
+}
+
+/**
+ * Create the defaults panel with dropdowns and apply button
+ * @param {string} teacherId - Teacher ID
+ * @param {Object} data - TimetableData object
+ * @returns {HTMLDivElement} The defaults panel element
+ */
+function createDefaultsPanel(teacherId, data) {
+    const panel = document.createElement('div');
+    panel.className = 'defaults-panel';
+    panel.id = `defaults-panel-${teacherId}`;
+    panel.dataset.teacherId = teacherId;
+
+    // Get sorted entities for each dropdown
+    const studentGroups = getSortedEntities(data.studentGroups);
+    const rooms = getSortedEntities(data.rooms);
+    const subjects = getSortedEntities(data.subjects);
+
+    // Student Group dropdown
+    const sgSelect = createDefaultsDropdown('studentGroupId', studentGroups, teacherId);
+    sgSelect.title = 'Default Student Group';
+    panel.appendChild(sgSelect);
+
+    // Room dropdown
+    const roomSelect = createDefaultsDropdown('roomId', rooms, teacherId);
+    roomSelect.title = 'Default Room';
+    panel.appendChild(roomSelect);
+
+    // Subject dropdown
+    const subjectSelect = createDefaultsDropdown('subjectId', subjects, teacherId);
+    subjectSelect.title = 'Default Subject';
+    panel.appendChild(subjectSelect);
+
+    // Apply button
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button';
+    applyBtn.className = 'defaults-apply-btn';
+    applyBtn.dataset.teacherId = teacherId;
+    applyBtn.textContent = 'Apply';
+    applyBtn.title = 'Fill blank cells with selected defaults';
+    panel.appendChild(applyBtn);
+
+    return panel;
+}
+
+/**
+ * Create a dropdown for the defaults panel
+ * @param {string} field - Field name: 'studentGroupId', 'roomId', 'subjectId'
+ * @param {Array} options - Array of [id, entity] pairs
+ * @param {string} teacherId - Teacher ID
+ * @returns {HTMLSelectElement} The created select element
+ */
+function createDefaultsDropdown(field, options, teacherId) {
+    const select = document.createElement('select');
+    select.className = 'defaults-dropdown';
+    select.dataset.field = field;
+    select.dataset.teacherId = teacherId;
+
+    // Determine label based on field
+    const labels = {
+        'studentGroupId': 'Student Group',
+        'roomId': 'Room',
+        'subjectId': 'Subject'
+    };
+
+    // Add blank option first
+    const blankOption = document.createElement('option');
+    blankOption.value = '';
+    blankOption.textContent = `— ${labels[field]} —`;
+    select.appendChild(blankOption);
+
+    // Add entity options in entry order
+    for (const [id, entity] of options) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = entity.name;
+        select.appendChild(option);
+    }
+
+    return select;
+}
+
+/**
+ * Toggle the defaults panel for a teacher
+ * @param {string} teacherId - Teacher ID
+ */
+function toggleDefaultsPanel(teacherId) {
+    const panel = document.getElementById(`defaults-panel-${teacherId}`);
+    const toggleBtn = document.querySelector(`.defaults-toggle[data-teacher-id="${teacherId}"]`);
+
+    if (panel && toggleBtn) {
+        const isExpanded = panel.classList.contains('expanded');
+
+        if (isExpanded) {
+            panel.classList.remove('expanded');
+            toggleBtn.classList.remove('expanded');
+        } else {
+            panel.classList.add('expanded');
+            toggleBtn.classList.add('expanded');
+        }
+    }
+}
+
+/**
+ * Apply default values to blank cells for a teacher
+ * @param {string} teacherId - Teacher ID
+ */
+function applyTeacherDefaults(teacherId) {
+    const panel = document.getElementById(`defaults-panel-${teacherId}`);
+    if (!panel) return;
+
+    // Get selected values from dropdowns
+    const dropdowns = panel.querySelectorAll('.defaults-dropdown');
+    const defaults = {};
+
+    for (const dropdown of dropdowns) {
+        const field = dropdown.dataset.field;
+        const value = dropdown.value;
+        if (value) {
+            defaults[field] = value;
+        }
+    }
+
+    // If no selections made, nothing to do
+    if (Object.keys(defaults).length === 0) {
+        return;
+    }
+
+    // Load current data
+    const data = loadData();
+    if (!data) {
+        console.error('No data found when applying defaults');
+        return;
+    }
+
+    // Find slots for this teacher and update blank fields
+    let updated = false;
+    for (const slot of data.slots) {
+        if (slot.teacherId !== teacherId) continue;
+
+        for (const [field, value] of Object.entries(defaults)) {
+            if (slot[field] === null) {
+                slot[field] = value;
+                updated = true;
+            }
+        }
+    }
+
+    // Save and re-render if any updates were made
+    if (updated) {
+        saveData(data);
+        renderMainViewGrid(data);
+    }
+
+    // Reset dropdowns to blank (panel is re-rendered, so this happens automatically)
+}
+
+/**
  * Initialize the Main View page
  * Renders the timetable grid or shows empty state
  */
@@ -541,12 +733,16 @@ function renderMainViewGrid(data) {
     corner.textContent = '';
     grid.appendChild(corner);
 
-    // Create header row (teacher names)
-    for (const [, teacher] of teachers) {
+    // Create header row (teacher names with defaults panels)
+    for (const [teacherId, teacher] of teachers) {
         const header = document.createElement('div');
-        header.className = 'grid-cell grid-header';
-        header.textContent = teacher.name;
+        header.className = 'grid-cell grid-header has-defaults';
         header.title = teacher.name; // Show full name on hover for truncated text
+
+        // Create header content with toggle and defaults panel
+        const headerContent = createTeacherHeader(teacherId, teacher, data);
+        header.appendChild(headerContent);
+
         grid.appendChild(header);
     }
 
@@ -666,6 +862,21 @@ function setupMainViewEventListeners() {
     // Event delegation for dropdown changes
     if (grid) {
         grid.addEventListener('change', handleDropdownChange);
+
+        // Event delegation for defaults panel toggle buttons
+        grid.addEventListener('click', (e) => {
+            const toggleBtn = e.target.closest('.defaults-toggle');
+            if (toggleBtn) {
+                const teacherId = toggleBtn.dataset.teacherId;
+                toggleDefaultsPanel(teacherId);
+            }
+
+            const applyBtn = e.target.closest('.defaults-apply-btn');
+            if (applyBtn) {
+                const teacherId = applyBtn.dataset.teacherId;
+                applyTeacherDefaults(teacherId);
+            }
+        });
     }
 }
 

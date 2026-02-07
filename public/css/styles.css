@@ -590,3 +590,109 @@ h1 {
 .grid-row-header[data-day="Thursday"] {
     background-color: #f5f5f5;
 }
+
+/* Teacher Defaults Panel */
+.teacher-header {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.teacher-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.teacher-header-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+}
+
+.defaults-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 12px;
+    color: #666;
+    transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.defaults-toggle:hover {
+    color: #3498db;
+}
+
+.defaults-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.defaults-panel {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.defaults-panel.expanded {
+    display: flex;
+}
+
+.defaults-dropdown {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+}
+
+.defaults-dropdown:hover {
+    border-color: #bbb;
+}
+
+.defaults-dropdown:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.defaults-apply-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 2px;
+}
+
+.defaults-apply-btn:hover {
+    background-color: #2980b9;
+}
+
+.defaults-apply-btn:active {
+    background-color: #2471a3;
+}
+
+/* Adjust header cell for expanded panel */
+.grid-header.has-defaults {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: auto;
+    padding: 10px 8px;
+}
