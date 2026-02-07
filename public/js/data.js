@@ -170,6 +170,220 @@ function getSlotsForDayPeriod(slots, day, period) {
     return slots.filter(slot => slot.day === day && slot.period === period);
 }
 
+/**
+ * Parse textarea text into an array of names
+ * Splits by newlines, trims whitespace, filters empty lines
+ * @param {string} text - Raw textarea value
+ * @returns {string[]} Array of trimmed, non-empty names
+ */
+function parseTextareaToNames(text) {
+    if (!text || typeof text !== 'string') {
+        return [];
+    }
+
+    return text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+}
+
+/**
+ * Validate periods value
+ * @param {string|number} value - Periods input value
+ * @returns {string|null} Error message or null if valid
+ */
+function validatePeriods(value) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 1) {
+        return 'Must be a positive whole number';
+    }
+    if (num > 20) {
+        return 'Maximum 20 periods allowed';
+    }
+    return null;
+}
+
+/**
+ * Check if a string contains control characters (excluding normal whitespace)
+ * @param {string} str - String to check
+ * @returns {boolean} True if contains invalid characters
+ */
+function hasInvalidCharacters(str) {
+    // Allow printable characters and normal whitespace, reject control chars
+    // eslint-disable-next-line no-control-regex
+    return /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(str);
+}
+
+/**
+ * Validate an array of entity names
+ * @param {string[]} names - Array of names to validate
+ * @returns {string[]} Array of error messages (empty if valid)
+ */
+function validateEntityNames(names) {
+    const errors = [];
+
+    // Check for blank names after trim
+    for (let i = 0; i < names.length; i++) {
+        if (names[i].length === 0) {
+            errors.push(`Line ${i + 1} is blank`);
+        }
+    }
+
+    // Check for duplicates (case-sensitive)
+    const seen = new Set();
+    for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        if (seen.has(name)) {
+            errors.push(`Duplicate name: "${name}"`);
+        } else {
+            seen.add(name);
+        }
+    }
+
+    // Check for invalid characters
+    for (let i = 0; i < names.length; i++) {
+        if (hasInvalidCharacters(names[i])) {
+            errors.push(`Line ${i + 1} contains invalid characters`);
+        }
+    }
+
+    return errors;
+}
+
+/**
+ * Validate all form inputs
+ * @param {Object} formData - Object with periods and entity name arrays
+ * @param {string|number} formData.periods - Number of periods
+ * @param {string[]} formData.teachers - Array of teacher names
+ * @param {string[]} formData.studentGroups - Array of student group names
+ * @param {string[]} formData.rooms - Array of room names
+ * @param {string[]} formData.subjects - Array of subject names
+ * @returns {Object} Object with field-specific errors: { periods: string|null, teachers: string|null, ... }
+ */
+function validateAllInputs(formData) {
+    const errors = {
+        periods: null,
+        teachers: null,
+        studentGroups: null,
+        rooms: null,
+        subjects: null
+    };
+
+    // Validate periods
+    errors.periods = validatePeriods(formData.periods);
+
+    // Validate each entity type
+    const teacherErrors = validateEntityNames(formData.teachers);
+    if (teacherErrors.length > 0) {
+        errors.teachers = teacherErrors.join('; ');
+    }
+
+    const studentGroupErrors = validateEntityNames(formData.studentGroups);
+    if (studentGroupErrors.length > 0) {
+        errors.studentGroups = studentGroupErrors.join('; ');
+    }
+
+    const roomErrors = validateEntityNames(formData.rooms);
+    if (roomErrors.length > 0) {
+        errors.rooms = roomErrors.join('; ');
+    }
+
+    const subjectErrors = validateEntityNames(formData.subjects);
+    if (subjectErrors.length > 0) {
+        errors.subjects = subjectErrors.join('; ');
+    }
+
+    return errors;
+}
+
+/**
+ * Check if validation errors object has any errors
+ * @param {Object} errors - Validation errors object
+ * @returns {boolean} True if there are any errors
+ */
+function hasValidationErrors(errors) {
+    return Object.values(errors).some(error => error !== null);
+}
+
+/**
+ * Find an entity by name in an entities object
+ * @param {Object} entities - Entities object (e.g., data.teachers)
+ * @param {string} name - Name to find
+ * @returns {string|null} Entity ID if found, null otherwise
+ */
+function findEntityIdByName(entities, name) {
+    for (const [id, entity] of Object.entries(entities)) {
+        if (entity.name === name) {
+            return id;
+        }
+    }
+    return null;
+}
+
+/**
+ * Sync entities from form names to data structure
+ * - Matches existing entities by name
+ * - Creates new entities for new names
+ * - Returns list of deleted entity IDs
+ * @param {Object} currentEntities - Current entities object from data
+ * @param {string[]} newNames - Array of names from form
+ * @param {string} entityType - Type of entity for ID generation
+ * @param {Object} data - Full timetable data (for ID generation)
+ * @returns {Object} { entities: Object, deletedIds: string[] }
+ */
+function syncEntities(currentEntities, newNames, entityType, data) {
+    const newEntities = {};
+    const deletedIds = [];
+    const usedIds = new Set();
+
+    // Track which existing entities are still present
+    for (const name of newNames) {
+        const existingId = findEntityIdByName(currentEntities, name);
+        if (existingId) {
+            // Keep existing entity
+            newEntities[existingId] = { id: existingId, name: name };
+            usedIds.add(existingId);
+        } else {
+            // Create new entity
+            const newId = generateEntityId(entityType, { [entityType]: newEntities });
+            newEntities[newId] = { id: newId, name: name };
+            usedIds.add(newId);
+        }
+    }
+
+    // Find deleted entities
+    for (const id of Object.keys(currentEntities)) {
+        if (!usedIds.has(id)) {
+            deletedIds.push(id);
+        }
+    }
+
+    return { entities: newEntities, deletedIds };
+}
+
+/**
+ * Update slots to orphan references to deleted entities
+ * Sets the relevant field to null for any slot referencing a deleted entity
+ * @param {Object[]} slots - Array of slot objects
+ * @param {string} field - Field name to update (e.g., 'studentGroupId')
+ * @param {string[]} deletedIds - Array of deleted entity IDs
+ * @returns {Object[]} Updated slots array
+ */
+function orphanSlotReferences(slots, field, deletedIds) {
+    if (deletedIds.length === 0) {
+        return slots;
+    }
+
+    const deletedSet = new Set(deletedIds);
+
+    return slots.map(slot => {
+        if (slot[field] && deletedSet.has(slot[field])) {
+            return { ...slot, [field]: null };
+        }
+        return slot;
+    });
+}
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -182,6 +396,14 @@ if (typeof module !== 'undefined' && module.exports) {
         createAllSlots,
         getSlotById,
         getSlotsForTeacher,
-        getSlotsForDayPeriod
+        getSlotsForDayPeriod,
+        parseTextareaToNames,
+        validatePeriods,
+        validateEntityNames,
+        validateAllInputs,
+        hasValidationErrors,
+        findEntityIdByName,
+        syncEntities,
+        orphanSlotReferences
     };
 }
