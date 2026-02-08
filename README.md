@@ -15,6 +15,7 @@ A simple web application for creating school timetables. Designed for small scho
 - Assign student groups, rooms, and subjects to each slot via dropdown menus
 - Changes save automatically
 - Sticky headers for easy navigation of large timetables
+- Timetabling conflicts highlighted
 
 ### Derived Views
 - Teacher timetables: view each teacher's schedule
