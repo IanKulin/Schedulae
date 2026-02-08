@@ -32,8 +32,8 @@ function showPage(pageId) {
  * Initialize the application
  */
 function initApp() {
-    // Initialize debounced auto-save (500ms delay)
-    initDebouncedSave();
+    // Initialize Main View state (debounced auto-save, conflict map)
+    MainViewState.init();
 
     // Set up event listeners
     setupDataEntryEventListeners();

@@ -2,12 +2,6 @@
  * Schedulae - Main View Page Module
  */
 
-// Create debounced save function for auto-save (500ms delay)
-let debouncedSave;
-
-// Current conflict map for the main view
-let currentConflictMap = {};
-
 /**
  * Save current data to LocalStorage
  * Called by the debounced auto-save mechanism
@@ -20,11 +14,29 @@ function saveChanges(data) {
 }
 
 /**
- * Initialize debounced save (called from initApp)
+ * Main View module state
+ * Encapsulates all mutable state for testing and reset capability
  */
-function initDebouncedSave() {
-    debouncedSave = debounce(saveChanges, 500);
-}
+const MainViewState = {
+    debouncedSave: null,
+    conflictMap: {},
+
+    /**
+     * Initialize state (called from initApp)
+     */
+    init() {
+        this.debouncedSave = debounce(saveChanges, 500);
+        this.conflictMap = {};
+    },
+
+    /**
+     * Reset state (useful for testing)
+     */
+    reset() {
+        this.debouncedSave = null;
+        this.conflictMap = {};
+    }
+};
 
 /**
  * Initialize the Main View page
@@ -360,7 +372,7 @@ function renderMainViewGrid(data) {
     const numTeachers = teachers.length;
 
     // Detect conflicts
-    currentConflictMap = detectConflicts(data);
+    MainViewState.conflictMap = detectConflicts(data);
 
     // Clear existing grid content
     grid.innerHTML = '';
@@ -409,7 +421,7 @@ function renderMainViewGrid(data) {
                 const slot = getSlotForCell(data, day, period, teacherId);
                 if (slot) {
                     // Check for conflicts on this slot
-                    const conflicts = currentConflictMap[slot.id] || [];
+                    const conflicts = MainViewState.conflictMap[slot.id] || [];
 
                     if (conflicts.length > 0) {
                         cell.classList.add('cell-conflict');
@@ -455,7 +467,7 @@ function handleDropdownChange(event) {
         slot[field] = newValue;
 
         // Use debounced auto-save (500ms delay)
-        debouncedSave(data);
+        MainViewState.debouncedSave(data);
 
         // Update conflict highlighting immediately for responsive feedback
         updateConflictHighlighting(data);
@@ -542,7 +554,7 @@ function hideConflictTooltip() {
  */
 function updateConflictHighlighting(data) {
     // Re-detect conflicts
-    currentConflictMap = detectConflicts(data);
+    MainViewState.conflictMap = detectConflicts(data);
 
     // Update all data cells
     const cells = $$('.grid-data-cell');
@@ -559,7 +571,7 @@ function updateConflictHighlighting(data) {
         );
 
         if (slot) {
-            const conflicts = currentConflictMap[slot.id] || [];
+            const conflicts = MainViewState.conflictMap[slot.id] || [];
 
             // Update cell conflict state
             if (conflicts.length > 0) {
@@ -676,6 +688,7 @@ function setupMainViewEventListeners() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         getSlotForCell,
-        createDropdown
+        createDropdown,
+        MainViewState
     };
 }
