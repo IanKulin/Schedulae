@@ -88,9 +88,8 @@ function initDataEntryPage() {
     }
 
     if (dataExists) {
-        // Populate periods (and disable field since changing periods after data exists is not supported)
+        // Populate periods (field remains enabled to allow editing)
         periodsInput.value = data.periods.length;
-        periodsInput.disabled = true;
 
         // Populate teachers
         teachersInput.value = entitiesToText(data.teachers);
@@ -248,6 +247,32 @@ function handleFormSubmit(event) {
     for (const teacherId of newTeacherIds) {
         const newSlots = createSlotsForTeacher(teacherId, data.periods);
         data.slots.push(...newSlots);
+    }
+
+    // Handle period count changes
+    const currentPeriodCount = data.periods.length;
+    const newPeriodCount = parseInt(formData.periods, 10);
+
+    if (newPeriodCount > currentPeriodCount) {
+        // Adding periods
+        addPeriodsToTimetable(data, newPeriodCount);
+    } else if (newPeriodCount < currentPeriodCount) {
+        // Removing periods - confirm with user
+        const affectedSlots = countSlotsForPeriods(data, newPeriodCount);
+        const periodsToRemove = currentPeriodCount - newPeriodCount;
+        const periodNumbers = [];
+        for (let p = newPeriodCount + 1; p <= currentPeriodCount; p++) {
+            periodNumbers.push(p);
+        }
+        const periodList = periodNumbers.join(', ');
+
+        const message = `Reducing periods from ${currentPeriodCount} to ${newPeriodCount} will permanently delete all data for period${periodsToRemove > 1 ? 's' : ''} ${periodList}. This will affect ${affectedSlots} slot${affectedSlots !== 1 ? 's' : ''}. Are you sure?`;
+
+        if (!confirm(message)) {
+            return; // User cancelled - abort save
+        }
+
+        removePeriodsFromTimetable(data, newPeriodCount);
     }
 
     // Save to LocalStorage

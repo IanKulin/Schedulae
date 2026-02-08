@@ -618,6 +618,67 @@ function detectConflicts(data) {
     return conflictMap;
 }
 
+/**
+ * Count the number of slots that would be affected by removing periods
+ * @param {Object} data - TimetableData object
+ * @param {number} newPeriodCount - The new (lower) period count
+ * @returns {number} Count of slots that would be deleted
+ */
+function countSlotsForPeriods(data, newPeriodCount) {
+    return data.slots.filter(slot => slot.period > newPeriodCount).length;
+}
+
+/**
+ * Add periods to a timetable, creating new slots for all existing teachers
+ * @param {Object} data - TimetableData object
+ * @param {number} newPeriodCount - The new (higher) period count
+ * @returns {Object} The updated data object
+ */
+function addPeriodsToTimetable(data, newPeriodCount) {
+    const currentMax = data.periods.length;
+
+    // Add new period numbers to the array
+    for (let p = currentMax + 1; p <= newPeriodCount; p++) {
+        data.periods.push(p);
+    }
+
+    // Create slots for new periods
+    const teacherIds = Object.keys(data.teachers);
+    for (const teacherId of teacherIds) {
+        for (let p = currentMax + 1; p <= newPeriodCount; p++) {
+            for (const day of DAYS) {
+                data.slots.push({
+                    id: generateSlotId(day, p, teacherId),
+                    day: day,
+                    period: p,
+                    teacherId: teacherId,
+                    studentGroupId: null,
+                    roomId: null,
+                    subjectId: null
+                });
+            }
+        }
+    }
+
+    return data;
+}
+
+/**
+ * Remove periods from a timetable, deleting slots for the removed periods
+ * @param {Object} data - TimetableData object
+ * @param {number} newPeriodCount - The new (lower) period count
+ * @returns {Object} The updated data object
+ */
+function removePeriodsFromTimetable(data, newPeriodCount) {
+    // Remove slots for deleted periods
+    data.slots = data.slots.filter(slot => slot.period <= newPeriodCount);
+
+    // Update periods array
+    data.periods = data.periods.slice(0, newPeriodCount);
+
+    return data;
+}
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -643,6 +704,9 @@ if (typeof module !== 'undefined' && module.exports) {
         validateTimetableData,
         importFromFile,
         detectEntityConflicts,
-        detectConflicts
+        detectConflicts,
+        countSlotsForPeriods,
+        addPeriodsToTimetable,
+        removePeriodsFromTimetable
     };
 }

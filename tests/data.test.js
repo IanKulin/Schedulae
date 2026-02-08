@@ -20,7 +20,10 @@ const {
     syncEntities,
     orphanSlotReferences,
     validateTimetableData,
-    importFromFile
+    importFromFile,
+    countSlotsForPeriods,
+    addPeriodsToTimetable,
+    removePeriodsFromTimetable
 } = require('../public/js/data.js');
 
 describe('DAYS constant', () => {
@@ -558,5 +561,205 @@ describe('importFromFile', () => {
         const result = importFromFile(JSON.stringify({ foo: 'bar' }));
         assert.strictEqual(result.success, false);
         assert.strictEqual(result.error, 'Invalid file: Missing required data structure');
+    });
+});
+
+// Edit Periods Feature Tests
+
+describe('countSlotsForPeriods', () => {
+    it('should count slots that would be removed', () => {
+        const data = {
+            periods: [1, 2, 3, 4, 5, 6],
+            slots: [
+                { id: '1', period: 1 },
+                { id: '2', period: 2 },
+                { id: '3', period: 5 },
+                { id: '4', period: 6 },
+                { id: '5', period: 6 }
+            ]
+        };
+        // Reducing to 4 periods should affect slots with period 5 and 6
+        assert.strictEqual(countSlotsForPeriods(data, 4), 3);
+    });
+
+    it('should return 0 when no periods are removed', () => {
+        const data = {
+            periods: [1, 2, 3],
+            slots: [
+                { id: '1', period: 1 },
+                { id: '2', period: 2 },
+                { id: '3', period: 3 }
+            ]
+        };
+        assert.strictEqual(countSlotsForPeriods(data, 3), 0);
+    });
+
+    it('should handle empty slots array', () => {
+        const data = {
+            periods: [1, 2, 3, 4],
+            slots: []
+        };
+        assert.strictEqual(countSlotsForPeriods(data, 2), 0);
+    });
+});
+
+describe('addPeriodsToTimetable', () => {
+    it('should add new period numbers to the periods array', () => {
+        const data = {
+            periods: [1, 2, 3],
+            teachers: {},
+            slots: []
+        };
+        addPeriodsToTimetable(data, 5);
+
+        assert.deepStrictEqual(data.periods, [1, 2, 3, 4, 5]);
+    });
+
+    it('should create slots for new periods for all teachers', () => {
+        const data = {
+            periods: [1, 2],
+            teachers: { '1': { id: '1', name: 'Alice' }, '2': { id: '2', name: 'Bob' } },
+            slots: []
+        };
+        addPeriodsToTimetable(data, 4);
+
+        // 2 teachers * 5 days * 2 new periods = 20 new slots
+        assert.strictEqual(data.slots.length, 20);
+
+        // Verify slots are for periods 3 and 4 only
+        assert.ok(data.slots.every(s => s.period >= 3 && s.period <= 4));
+    });
+
+    it('should not create duplicate slots if called multiple times', () => {
+        const data = {
+            periods: [1],
+            teachers: { '1': { id: '1', name: 'Alice' } },
+            slots: []
+        };
+        addPeriodsToTimetable(data, 2);
+
+        // 1 teacher * 5 days * 1 new period = 5 new slots
+        assert.strictEqual(data.slots.length, 5);
+        assert.deepStrictEqual(data.periods, [1, 2]);
+    });
+
+    it('should handle no teachers gracefully', () => {
+        const data = {
+            periods: [1, 2],
+            teachers: {},
+            slots: []
+        };
+        addPeriodsToTimetable(data, 4);
+
+        assert.deepStrictEqual(data.periods, [1, 2, 3, 4]);
+        assert.strictEqual(data.slots.length, 0);
+    });
+
+    it('should create slots with correct structure', () => {
+        const data = {
+            periods: [1],
+            teachers: { '1': { id: '1', name: 'Alice' } },
+            slots: []
+        };
+        addPeriodsToTimetable(data, 2);
+
+        const mondaySlot = data.slots.find(s => s.day === 'Monday');
+        assert.ok(mondaySlot);
+        assert.strictEqual(mondaySlot.period, 2);
+        assert.strictEqual(mondaySlot.teacherId, '1');
+        assert.strictEqual(mondaySlot.studentGroupId, null);
+        assert.strictEqual(mondaySlot.roomId, null);
+        assert.strictEqual(mondaySlot.subjectId, null);
+    });
+});
+
+describe('removePeriodsFromTimetable', () => {
+    it('should remove period numbers from the periods array', () => {
+        const data = {
+            periods: [1, 2, 3, 4, 5],
+            slots: []
+        };
+        removePeriodsFromTimetable(data, 3);
+
+        assert.deepStrictEqual(data.periods, [1, 2, 3]);
+    });
+
+    it('should delete slots for removed periods', () => {
+        const data = {
+            periods: [1, 2, 3, 4],
+            slots: [
+                { id: '1', period: 1, day: 'Monday', teacherId: '1' },
+                { id: '2', period: 2, day: 'Monday', teacherId: '1' },
+                { id: '3', period: 3, day: 'Monday', teacherId: '1' },
+                { id: '4', period: 4, day: 'Monday', teacherId: '1' }
+            ]
+        };
+        removePeriodsFromTimetable(data, 2);
+
+        assert.strictEqual(data.slots.length, 2);
+        assert.ok(data.slots.every(s => s.period <= 2));
+    });
+
+    it('should preserve slot data for remaining periods', () => {
+        const data = {
+            periods: [1, 2, 3],
+            slots: [
+                { id: '1', period: 1, studentGroupId: 'sg1', roomId: 'r1', subjectId: 's1' },
+                { id: '2', period: 2, studentGroupId: 'sg2', roomId: 'r2', subjectId: 's2' },
+                { id: '3', period: 3, studentGroupId: 'sg3', roomId: 'r3', subjectId: 's3' }
+            ]
+        };
+        removePeriodsFromTimetable(data, 2);
+
+        const slot1 = data.slots.find(s => s.id === '1');
+        const slot2 = data.slots.find(s => s.id === '2');
+
+        assert.strictEqual(slot1.studentGroupId, 'sg1');
+        assert.strictEqual(slot1.roomId, 'r1');
+        assert.strictEqual(slot1.subjectId, 's1');
+
+        assert.strictEqual(slot2.studentGroupId, 'sg2');
+        assert.strictEqual(slot2.roomId, 'r2');
+        assert.strictEqual(slot2.subjectId, 's2');
+    });
+
+    it('should handle reducing to 1 period', () => {
+        const data = {
+            periods: [1, 2, 3],
+            slots: [
+                { id: '1', period: 1 },
+                { id: '2', period: 2 },
+                { id: '3', period: 3 }
+            ]
+        };
+        removePeriodsFromTimetable(data, 1);
+
+        assert.deepStrictEqual(data.periods, [1]);
+        assert.strictEqual(data.slots.length, 1);
+    });
+});
+
+describe('period changes preserve unaffected data', () => {
+    it('should preserve existing slots when adding periods', () => {
+        const data = {
+            periods: [1, 2],
+            teachers: { '1': { id: '1', name: 'Alice' } },
+            slots: [
+                { id: 'existing1', period: 1, day: 'Monday', teacherId: '1', studentGroupId: 'sg1', roomId: 'r1', subjectId: 's1' },
+                { id: 'existing2', period: 2, day: 'Monday', teacherId: '1', studentGroupId: 'sg2', roomId: 'r2', subjectId: 's2' }
+            ]
+        };
+
+        const originalSlots = [...data.slots];
+        addPeriodsToTimetable(data, 3);
+
+        // Original slots should still exist with their data
+        const slot1 = data.slots.find(s => s.id === 'existing1');
+        const slot2 = data.slots.find(s => s.id === 'existing2');
+
+        assert.ok(slot1);
+        assert.ok(slot2);
+        assert.strictEqual(slot1.studentGroupId, 'sg1');
+        assert.strictEqual(slot2.studentGroupId, 'sg2');
     });
 });
