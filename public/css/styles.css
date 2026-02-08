@@ -697,3 +697,45 @@ h1 {
     min-height: auto;
     padding: 10px 8px;
 }
+
+/* Conflict Highlighting */
+.cell-conflict {
+    background-color: #FFF3E0 !important;  /* Light orange background */
+}
+
+.cell-conflict:hover {
+    background-color: #FFE0B2 !important;  /* Slightly darker on hover */
+}
+
+.dropdown-conflict {
+    border-color: #FF9800 !important;
+    border-width: 2px !important;
+}
+
+/* Conflict Tooltip */
+.conflict-tooltip {
+    position: fixed;
+    background: #424242;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    max-width: 280px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    line-height: 1.4;
+}
+
+.conflict-tooltip-item {
+    margin-bottom: 4px;
+}
+
+.conflict-tooltip-item:last-child {
+    margin-bottom: 0;
+}
+
+.conflict-tooltip-type {
+    font-weight: 600;
+    color: #FFB74D;
+}

@@ -511,6 +511,113 @@ function importFromFile(jsonString) {
     }
 }
 
+/**
+ * Detect entity conflicts (double-bookings) within a set of slots at a specific time
+ * @param {Object[]} slotsAtTime - Array of slots at a specific day/period
+ * @param {string} entityField - Field name to check: 'studentGroupId' or 'roomId'
+ * @param {string} conflictType - Type of conflict: 'studentGroup' or 'room'
+ * @param {Object} entities - Entity lookup object (studentGroups or rooms)
+ * @param {Object} teachers - Teachers lookup object
+ * @param {string} day - Day of the week
+ * @param {number} period - Period number
+ * @param {Object} conflictMap - Map to populate with conflicts (slotId -> array of conflicts)
+ */
+function detectEntityConflicts(slotsAtTime, entityField, conflictType, entities, teachers, day, period, conflictMap) {
+    // Group slots by entity ID
+    const entityGroups = {};
+
+    for (const slot of slotsAtTime) {
+        const entityId = slot[entityField];
+        // Skip null/empty entity values
+        if (!entityId) continue;
+
+        if (!entityGroups[entityId]) {
+            entityGroups[entityId] = [];
+        }
+        entityGroups[entityId].push(slot);
+    }
+
+    // Find conflicts (entities appearing in multiple slots)
+    for (const [entityId, slots] of Object.entries(entityGroups)) {
+        if (slots.length <= 1) continue;
+
+        // This entity is double-booked
+        const entity = entities[entityId];
+        const entityName = entity ? entity.name : `Unknown (${entityId})`;
+        const slotIds = slots.map(s => s.id);
+        const involvedTeachers = slots.map(s => {
+            const teacher = teachers[s.teacherId];
+            return teacher ? teacher.name : `Unknown (${s.teacherId})`;
+        });
+
+        // Add conflict to each affected slot
+        for (let i = 0; i < slots.length; i++) {
+            const slot = slots[i];
+            const otherTeachers = involvedTeachers.filter((_, idx) => idx !== i);
+
+            if (!conflictMap[slot.id]) {
+                conflictMap[slot.id] = [];
+            }
+
+            conflictMap[slot.id].push({
+                type: conflictType,
+                entityId: entityId,
+                entityName: entityName,
+                day: day,
+                period: period,
+                slotIds: slotIds,
+                involvedTeachers: involvedTeachers,
+                otherTeachers: otherTeachers
+            });
+        }
+    }
+}
+
+/**
+ * Detect all scheduling conflicts in the timetable
+ * @param {Object} data - TimetableData object
+ * @returns {Object} Conflict map: slotId -> array of conflict objects
+ */
+function detectConflicts(data) {
+    const conflictMap = {}; // slotId -> array of conflict objects
+
+    if (!data || !data.slots || !data.periods) {
+        return conflictMap;
+    }
+
+    for (const day of DAYS) {
+        for (const period of data.periods) {
+            const slotsAtTime = getSlotsForDayPeriod(data.slots, day, period);
+
+            // Check student group conflicts
+            detectEntityConflicts(
+                slotsAtTime,
+                'studentGroupId',
+                'studentGroup',
+                data.studentGroups || {},
+                data.teachers || {},
+                day,
+                period,
+                conflictMap
+            );
+
+            // Check room conflicts
+            detectEntityConflicts(
+                slotsAtTime,
+                'roomId',
+                'room',
+                data.rooms || {},
+                data.teachers || {},
+                day,
+                period,
+                conflictMap
+            );
+        }
+    }
+
+    return conflictMap;
+}
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -534,6 +641,8 @@ if (typeof module !== 'undefined' && module.exports) {
         syncEntities,
         orphanSlotReferences,
         validateTimetableData,
-        importFromFile
+        importFromFile,
+        detectEntityConflicts,
+        detectConflicts
     };
 }

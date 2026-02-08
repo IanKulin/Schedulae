@@ -5,6 +5,9 @@
 // Create debounced save function for auto-save (500ms delay)
 let debouncedSave;
 
+// Current conflict map for the main view
+let currentConflictMap = {};
+
 /**
  * Escape HTML special characters to prevent XSS
  * @param {string} str - String to escape
@@ -458,9 +461,10 @@ function createDropdown(type, options, selectedId, slotId) {
  * Create the cell content with three dropdowns
  * @param {Object} data - TimetableData object
  * @param {Object} slot - The slot object for this cell
+ * @param {Object[]} conflicts - Array of conflict objects for this slot (optional)
  * @returns {DocumentFragment} Fragment containing the dropdowns
  */
-function createCellContent(data, slot) {
+function createCellContent(data, slot, conflicts) {
     const fragment = document.createDocumentFragment();
 
     // Get sorted entities for each dropdown
@@ -468,14 +472,28 @@ function createCellContent(data, slot) {
     const rooms = getSortedEntities(data.rooms);
     const subjects = getSortedEntities(data.subjects);
 
+    // Determine which dropdowns have conflicts
+    const conflictTypes = new Set();
+    if (conflicts && conflicts.length > 0) {
+        for (const conflict of conflicts) {
+            conflictTypes.add(conflict.type);
+        }
+    }
+
     // Create StudentGroup dropdown
     const sgDropdown = createDropdown('studentGroup', studentGroups, slot.studentGroupId, slot.id);
     sgDropdown.title = 'Student Group';
+    if (conflictTypes.has('studentGroup')) {
+        sgDropdown.classList.add('dropdown-conflict');
+    }
     fragment.appendChild(sgDropdown);
 
     // Create Room dropdown
     const roomDropdown = createDropdown('room', rooms, slot.roomId, slot.id);
     roomDropdown.title = 'Room';
+    if (conflictTypes.has('room')) {
+        roomDropdown.classList.add('dropdown-conflict');
+    }
     fragment.appendChild(roomDropdown);
 
     // Create Subject dropdown
@@ -673,6 +691,7 @@ function applyTeacherDefaults(teacherId) {
     if (updated) {
         saveData(data);
         renderMainViewGrid(data);
+        // Conflict highlighting is updated in renderMainViewGrid via detectConflicts
     }
 
     // Reset dropdowns to blank (panel is re-rendered, so this happens automatically)
@@ -721,6 +740,9 @@ function renderMainViewGrid(data) {
     const periods = data.periods;
     const numTeachers = teachers.length;
 
+    // Detect conflicts
+    currentConflictMap = detectConflicts(data);
+
     // Clear existing grid content
     grid.innerHTML = '';
 
@@ -767,7 +789,15 @@ function renderMainViewGrid(data) {
                 // Find the slot for this cell
                 const slot = getSlotForCell(data, day, period, teacherId);
                 if (slot) {
-                    cell.appendChild(createCellContent(data, slot));
+                    // Check for conflicts on this slot
+                    const conflicts = currentConflictMap[slot.id] || [];
+
+                    if (conflicts.length > 0) {
+                        cell.classList.add('cell-conflict');
+                        cell.dataset.conflicts = JSON.stringify(conflicts);
+                    }
+
+                    cell.appendChild(createCellContent(data, slot, conflicts));
                 }
 
                 grid.appendChild(cell);
@@ -807,8 +837,136 @@ function handleDropdownChange(event) {
 
         // Use debounced auto-save (500ms delay)
         debouncedSave(data);
+
+        // Update conflict highlighting immediately for responsive feedback
+        updateConflictHighlighting(data);
     } else {
         console.error('Slot not found:', slotId);
+    }
+}
+
+/**
+ * Show conflict tooltip near the hovered cell
+ * @param {HTMLElement} cell - The cell element with conflicts
+ * @param {MouseEvent} event - The mouse event
+ */
+function showConflictTooltip(cell, event) {
+    // Remove any existing tooltip
+    hideConflictTooltip();
+
+    const conflictsData = cell.dataset.conflicts;
+    if (!conflictsData) return;
+
+    let conflicts;
+    try {
+        conflicts = JSON.parse(conflictsData);
+    } catch (e) {
+        return;
+    }
+
+    if (!conflicts || conflicts.length === 0) return;
+
+    // Build tooltip content
+    const tooltip = document.createElement('div');
+    tooltip.className = 'conflict-tooltip';
+    tooltip.id = 'conflict-tooltip';
+
+    for (const conflict of conflicts) {
+        const item = document.createElement('div');
+        item.className = 'conflict-tooltip-item';
+
+        const typeLabel = conflict.type === 'studentGroup' ? 'Class' : 'Room';
+        const otherTeachers = conflict.otherTeachers.join(', ');
+
+        item.innerHTML = `<span class="conflict-tooltip-type">${escapeHtml(typeLabel)}:</span> ${escapeHtml(conflict.entityName)} is also scheduled with ${escapeHtml(otherTeachers)}`;
+        tooltip.appendChild(item);
+    }
+
+    document.body.appendChild(tooltip);
+
+    // Position tooltip near the mouse but ensure it stays on screen
+    const rect = cell.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    let left = rect.right + 10;
+    let top = rect.top;
+
+    // Keep tooltip on screen
+    if (left + tooltipRect.width > window.innerWidth) {
+        left = rect.left - tooltipRect.width - 10;
+    }
+    if (top + tooltipRect.height > window.innerHeight) {
+        top = window.innerHeight - tooltipRect.height - 10;
+    }
+    if (top < 0) {
+        top = 10;
+    }
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+}
+
+/**
+ * Hide the conflict tooltip
+ */
+function hideConflictTooltip() {
+    const existing = document.getElementById('conflict-tooltip');
+    if (existing) {
+        existing.remove();
+    }
+}
+
+/**
+ * Update conflict highlighting after a dropdown change
+ * Re-detects conflicts and updates the visual state
+ * @param {Object} data - TimetableData object
+ */
+function updateConflictHighlighting(data) {
+    // Re-detect conflicts
+    currentConflictMap = detectConflicts(data);
+
+    // Update all data cells
+    const cells = $$('.grid-data-cell');
+    for (const cell of cells) {
+        const day = cell.dataset.day;
+        const period = parseInt(cell.dataset.period, 10);
+        const teacherId = cell.dataset.teacherId;
+
+        // Find the slot for this cell
+        const slot = data.slots.find(s =>
+            s.day === day &&
+            s.period === period &&
+            s.teacherId === teacherId
+        );
+
+        if (slot) {
+            const conflicts = currentConflictMap[slot.id] || [];
+
+            // Update cell conflict state
+            if (conflicts.length > 0) {
+                cell.classList.add('cell-conflict');
+                cell.dataset.conflicts = JSON.stringify(conflicts);
+            } else {
+                cell.classList.remove('cell-conflict');
+                delete cell.dataset.conflicts;
+            }
+
+            // Update dropdown conflict highlighting
+            const dropdowns = cell.querySelectorAll('.cell-dropdown');
+            const conflictTypes = new Set(conflicts.map(c => c.type));
+
+            for (const dropdown of dropdowns) {
+                const field = dropdown.dataset.field;
+                const type = field === 'studentGroupId' ? 'studentGroup' :
+                             field === 'roomId' ? 'room' : null;
+
+                if (type && conflictTypes.has(type)) {
+                    dropdown.classList.add('dropdown-conflict');
+                } else {
+                    dropdown.classList.remove('dropdown-conflict');
+                }
+            }
+        }
     }
 }
 
@@ -877,6 +1035,21 @@ function setupMainViewEventListeners() {
                 applyTeacherDefaults(teacherId);
             }
         });
+
+        // Conflict tooltip event delegation
+        grid.addEventListener('mouseenter', (e) => {
+            const cell = e.target.closest('.cell-conflict');
+            if (cell) {
+                showConflictTooltip(cell, e);
+            }
+        }, true);
+
+        grid.addEventListener('mouseleave', (e) => {
+            const cell = e.target.closest('.cell-conflict');
+            if (cell) {
+                hideConflictTooltip();
+            }
+        }, true);
     }
 }
 

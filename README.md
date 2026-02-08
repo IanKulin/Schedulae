@@ -106,7 +106,6 @@ Data is stored in LocalStorage under the key `timetableData`. Clearing browser d
 ## Limitations
 
 - Number of periods cannot be changed after initial setup
-- No validation for room or student group double-booking
 - No mobile browser support
 - Single timetable per browser
 

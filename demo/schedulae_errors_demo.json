@@ -1,0 +1,399 @@
+{
+  "periods": [1, 2, 3, 4, 5, 6],
+  "teachers": {
+    "1": { "id": "1", "name": "Ms Smith" },
+    "2": { "id": "2", "name": "Mr Jones" },
+    "3": { "id": "3", "name": "Dr Brown" },
+    "4": { "id": "4", "name": "Mrs Wilson" }
+  },
+  "studentGroups": {
+    "1": { "id": "1", "name": "9A" },
+    "2": { "id": "2", "name": "9B" },
+    "3": { "id": "3", "name": "10A" },
+    "4": { "id": "4", "name": "10B" }
+  },
+  "rooms": {
+    "1": { "id": "1", "name": "Room 101" },
+    "2": { "id": "2", "name": "Room 102" },
+    "3": { "id": "3", "name": "Science Lab" },
+    "4": { "id": "4", "name": "Art Room" }
+  },
+  "subjects": {
+    "1": { "id": "1", "name": "Maths" },
+    "2": { "id": "2", "name": "English" },
+    "3": { "id": "3", "name": "Science" },
+    "4": { "id": "4", "name": "Art" }
+  },
+  "slots": [
+    {
+      "_comment": "=== MONDAY P1: Student Group Conflict (9A double-booked) ===",
+      "id": "slot_monday_1_1",
+      "day": "Monday",
+      "period": 1,
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_1_2",
+      "day": "Monday",
+      "period": 1,
+      "teacherId": "2",
+      "studentGroupId": "1",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+    {
+      "id": "slot_monday_1_3",
+      "day": "Monday",
+      "period": 1,
+      "teacherId": "3",
+      "studentGroupId": "2",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_1_4",
+      "day": "Monday",
+      "period": 1,
+      "teacherId": "4",
+      "studentGroupId": "3",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== MONDAY P2: Room Conflict (Science Lab double-booked) ===",
+      "id": "slot_monday_2_1",
+      "day": "Monday",
+      "period": 2,
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_2_2",
+      "day": "Monday",
+      "period": 2,
+      "teacherId": "2",
+      "studentGroupId": "2",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_2_3",
+      "day": "Monday",
+      "period": 2,
+      "teacherId": "3",
+      "studentGroupId": "3",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_2_4",
+      "day": "Monday",
+      "period": 2,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+
+    {
+      "_comment": "=== MONDAY P3: Both Conflicts (9B double-booked AND Room 102 double-booked) ===",
+      "id": "slot_monday_3_1",
+      "day": "Monday",
+      "period": 3,
+      "teacherId": "1",
+      "studentGroupId": "2",
+      "roomId": "2",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_3_2",
+      "day": "Monday",
+      "period": 3,
+      "teacherId": "2",
+      "studentGroupId": "2",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+    {
+      "id": "slot_monday_3_3",
+      "day": "Monday",
+      "period": 3,
+      "teacherId": "3",
+      "studentGroupId": "3",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_3_4",
+      "day": "Monday",
+      "period": 3,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== MONDAY P4: Triple Student Group Conflict (10A with 3 teachers) ===",
+      "id": "slot_monday_4_1",
+      "day": "Monday",
+      "period": 4,
+      "teacherId": "1",
+      "studentGroupId": "3",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_4_2",
+      "day": "Monday",
+      "period": 4,
+      "teacherId": "2",
+      "studentGroupId": "3",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+    {
+      "id": "slot_monday_4_3",
+      "day": "Monday",
+      "period": 4,
+      "teacherId": "3",
+      "studentGroupId": "3",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_4_4",
+      "day": "Monday",
+      "period": 4,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== MONDAY P5: No Conflicts (all different) ===",
+      "id": "slot_monday_5_1",
+      "day": "Monday",
+      "period": 5,
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_5_2",
+      "day": "Monday",
+      "period": 5,
+      "teacherId": "2",
+      "studentGroupId": "2",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+    {
+      "id": "slot_monday_5_3",
+      "day": "Monday",
+      "period": 5,
+      "teacherId": "3",
+      "studentGroupId": "3",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_monday_5_4",
+      "day": "Monday",
+      "period": 5,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== MONDAY P6: No Conflicts (some empty slots) ===",
+      "id": "slot_monday_6_1",
+      "day": "Monday",
+      "period": 6,
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_monday_6_2",
+      "day": "Monday",
+      "period": 6,
+      "teacherId": "2",
+      "studentGroupId": null,
+      "roomId": null,
+      "subjectId": null
+    },
+    {
+      "id": "slot_monday_6_3",
+      "day": "Monday",
+      "period": 6,
+      "teacherId": "3",
+      "studentGroupId": null,
+      "roomId": null,
+      "subjectId": null
+    },
+    {
+      "id": "slot_monday_6_4",
+      "day": "Monday",
+      "period": 6,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== TUESDAY P1: Two separate Student Group Conflicts ===",
+      "id": "slot_tuesday_1_1",
+      "day": "Tuesday",
+      "period": 1,
+      "teacherId": "1",
+      "studentGroupId": "1",
+      "roomId": "1",
+      "subjectId": "1"
+    },
+    {
+      "id": "slot_tuesday_1_2",
+      "day": "Tuesday",
+      "period": 1,
+      "teacherId": "2",
+      "studentGroupId": "1",
+      "roomId": "2",
+      "subjectId": "2"
+    },
+    {
+      "id": "slot_tuesday_1_3",
+      "day": "Tuesday",
+      "period": 1,
+      "teacherId": "3",
+      "studentGroupId": "4",
+      "roomId": "3",
+      "subjectId": "3"
+    },
+    {
+      "id": "slot_tuesday_1_4",
+      "day": "Tuesday",
+      "period": 1,
+      "teacherId": "4",
+      "studentGroupId": "4",
+      "roomId": "4",
+      "subjectId": "4"
+    },
+
+    {
+      "_comment": "=== TUESDAY P2-P6: Empty slots ===",
+      "id": "slot_tuesday_2_1",
+      "day": "Tuesday",
+      "period": 2,
+      "teacherId": "1",
+      "studentGroupId": null,
+      "roomId": null,
+      "subjectId": null
+    },
+    { "id": "slot_tuesday_2_2", "day": "Tuesday", "period": 2, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_2_3", "day": "Tuesday", "period": 2, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_2_4", "day": "Tuesday", "period": 2, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_3_1", "day": "Tuesday", "period": 3, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_3_2", "day": "Tuesday", "period": 3, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_3_3", "day": "Tuesday", "period": 3, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_3_4", "day": "Tuesday", "period": 3, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_4_1", "day": "Tuesday", "period": 4, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_4_2", "day": "Tuesday", "period": 4, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_4_3", "day": "Tuesday", "period": 4, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_4_4", "day": "Tuesday", "period": 4, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_5_1", "day": "Tuesday", "period": 5, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_5_2", "day": "Tuesday", "period": 5, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_5_3", "day": "Tuesday", "period": 5, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_5_4", "day": "Tuesday", "period": 5, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_6_1", "day": "Tuesday", "period": 6, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_6_2", "day": "Tuesday", "period": 6, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_6_3", "day": "Tuesday", "period": 6, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_tuesday_6_4", "day": "Tuesday", "period": 6, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+
+    { "id": "slot_wednesday_1_1", "day": "Wednesday", "period": 1, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_1_2", "day": "Wednesday", "period": 1, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_1_3", "day": "Wednesday", "period": 1, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_1_4", "day": "Wednesday", "period": 1, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_2_1", "day": "Wednesday", "period": 2, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_2_2", "day": "Wednesday", "period": 2, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_2_3", "day": "Wednesday", "period": 2, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_2_4", "day": "Wednesday", "period": 2, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_3_1", "day": "Wednesday", "period": 3, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_3_2", "day": "Wednesday", "period": 3, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_3_3", "day": "Wednesday", "period": 3, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_3_4", "day": "Wednesday", "period": 3, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_4_1", "day": "Wednesday", "period": 4, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_4_2", "day": "Wednesday", "period": 4, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_4_3", "day": "Wednesday", "period": 4, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_4_4", "day": "Wednesday", "period": 4, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_5_1", "day": "Wednesday", "period": 5, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_5_2", "day": "Wednesday", "period": 5, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_5_3", "day": "Wednesday", "period": 5, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_5_4", "day": "Wednesday", "period": 5, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_6_1", "day": "Wednesday", "period": 6, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_6_2", "day": "Wednesday", "period": 6, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_6_3", "day": "Wednesday", "period": 6, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_wednesday_6_4", "day": "Wednesday", "period": 6, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+
+    { "id": "slot_thursday_1_1", "day": "Thursday", "period": 1, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_1_2", "day": "Thursday", "period": 1, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_1_3", "day": "Thursday", "period": 1, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_1_4", "day": "Thursday", "period": 1, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_2_1", "day": "Thursday", "period": 2, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_2_2", "day": "Thursday", "period": 2, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_2_3", "day": "Thursday", "period": 2, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_2_4", "day": "Thursday", "period": 2, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_3_1", "day": "Thursday", "period": 3, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_3_2", "day": "Thursday", "period": 3, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_3_3", "day": "Thursday", "period": 3, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_3_4", "day": "Thursday", "period": 3, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_4_1", "day": "Thursday", "period": 4, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_4_2", "day": "Thursday", "period": 4, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_4_3", "day": "Thursday", "period": 4, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_4_4", "day": "Thursday", "period": 4, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_5_1", "day": "Thursday", "period": 5, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_5_2", "day": "Thursday", "period": 5, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_5_3", "day": "Thursday", "period": 5, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_5_4", "day": "Thursday", "period": 5, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_6_1", "day": "Thursday", "period": 6, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_6_2", "day": "Thursday", "period": 6, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_6_3", "day": "Thursday", "period": 6, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_thursday_6_4", "day": "Thursday", "period": 6, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+
+    { "id": "slot_friday_1_1", "day": "Friday", "period": 1, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_1_2", "day": "Friday", "period": 1, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_1_3", "day": "Friday", "period": 1, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_1_4", "day": "Friday", "period": 1, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_2_1", "day": "Friday", "period": 2, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_2_2", "day": "Friday", "period": 2, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_2_3", "day": "Friday", "period": 2, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_2_4", "day": "Friday", "period": 2, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_3_1", "day": "Friday", "period": 3, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_3_2", "day": "Friday", "period": 3, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_3_3", "day": "Friday", "period": 3, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_3_4", "day": "Friday", "period": 3, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_4_1", "day": "Friday", "period": 4, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_4_2", "day": "Friday", "period": 4, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_4_3", "day": "Friday", "period": 4, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_4_4", "day": "Friday", "period": 4, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_5_1", "day": "Friday", "period": 5, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_5_2", "day": "Friday", "period": 5, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_5_3", "day": "Friday", "period": 5, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_5_4", "day": "Friday", "period": 5, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_6_1", "day": "Friday", "period": 6, "teacherId": "1", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_6_2", "day": "Friday", "period": 6, "teacherId": "2", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_6_3", "day": "Friday", "period": 6, "teacherId": "3", "studentGroupId": null, "roomId": null, "subjectId": null },
+    { "id": "slot_friday_6_4", "day": "Friday", "period": 6, "teacherId": "4", "studentGroupId": null, "roomId": null, "subjectId": null }
+  ]
+}
