@@ -600,7 +600,7 @@ function setupMainViewEventListeners() {
     const emptyStateLink = $('#empty-state-link');
     const grid = $('#timetable-grid');
     const teacherTimetablesLink = $('#nav-teacher-timetables');
-    const studentGroupTimetablesLink = $('#nav-studentgroup-timetables');
+    const studentGroupTimetablesLink = $('#nav-student-group-timetables');
     const roomTimetablesLink = $('#nav-room-timetables');
 
     if (dataEntryLink) {

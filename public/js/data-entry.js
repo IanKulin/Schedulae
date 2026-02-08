@@ -13,7 +13,7 @@ function initDataEntryPage() {
     // Get form elements
     const periodsInput = $('#periods-input');
     const teachersInput = $('#teachers-input');
-    const studentGroupsInput = $('#studentgroups-input');
+    const studentGroupsInput = $('#student-groups-input');
     const roomsInput = $('#rooms-input');
     const subjectsInput = $('#subjects-input');
     const cancelButton = $('#cancel-button');
@@ -117,7 +117,7 @@ function collectFormData() {
     return {
         periods: $('#periods-input').value,
         teachers: parseTextareaToNames($('#teachers-input').value),
-        studentGroups: parseTextareaToNames($('#studentgroups-input').value),
+        studentGroups: parseTextareaToNames($('#student-groups-input').value),
         rooms: parseTextareaToNames($('#rooms-input').value),
         subjects: parseTextareaToNames($('#subjects-input').value)
     };
@@ -130,7 +130,7 @@ function collectFormData() {
 function displayValidationErrors(errors) {
     if (errors.periods) showFieldError('periods', errors.periods);
     if (errors.teachers) showFieldError('teachers', errors.teachers);
-    if (errors.studentGroups) showFieldError('studentgroups', errors.studentGroups);
+    if (errors.studentGroups) showFieldError('student-groups', errors.studentGroups);
     if (errors.rooms) showFieldError('rooms', errors.rooms);
     if (errors.subjects) showFieldError('subjects', errors.subjects);
 }

@@ -99,7 +99,7 @@ function renderDerivedViewIndex(entityType, entities, config) {
                 <a href="#" id="nav-back-to-main-from-index">Main View</a>
                 <span class="nav-separator">|</span>
                 <a href="#" id="nav-teacher-timetables-from-index" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
-                <a href="#" id="nav-studentgroup-timetables-from-index" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
+                <a href="#" id="nav-student-group-timetables-from-index" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
                 <a href="#" id="nav-room-timetables-from-index" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
@@ -134,7 +134,7 @@ function setupNavLink(selector, handler) {
  */
 function setupDerivedTypeNavigation(suffix) {
     setupNavLink(`#nav-teacher-timetables-${suffix}`, () => showDerivedViewIndex('teachers'));
-    setupNavLink(`#nav-studentgroup-timetables-${suffix}`, () => showDerivedViewIndex('studentGroups'));
+    setupNavLink(`#nav-student-group-timetables-${suffix}`, () => showDerivedViewIndex('studentGroups'));
     setupNavLink(`#nav-room-timetables-${suffix}`, () => showDerivedViewIndex('rooms'));
 }
 
@@ -218,7 +218,7 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
                 <a href="#" id="nav-back-to-main-from-individual">Main View</a>
                 <span class="nav-separator">|</span>
                 <a href="#" id="nav-teacher-timetables-from-individual" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
-                <a href="#" id="nav-studentgroup-timetables-from-individual" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
+                <a href="#" id="nav-student-group-timetables-from-individual" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
                 <a href="#" id="nav-room-timetables-from-individual" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
