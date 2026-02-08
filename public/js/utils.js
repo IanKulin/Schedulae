@@ -3,6 +3,42 @@
  */
 
 /**
+ * Abbreviated day names for display
+ */
+const DAY_ABBREVIATIONS = {
+    "Monday": "Mon",
+    "Tuesday": "Tue",
+    "Wednesday": "Wed",
+    "Thursday": "Thu",
+    "Friday": "Fri"
+};
+
+/**
+ * Escape HTML special characters to prevent XSS
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
+ * Get entities sorted by ID (entry order)
+ * @param {Object} entities - Entities object from TimetableData
+ * @returns {Array} Array of [id, entity] pairs sorted by numeric ID
+ */
+function getSortedEntities(entities) {
+    if (!entities) return [];
+    return Object.entries(entities).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
+}
+
+/**
  * Query shorthand for document.querySelector
  * @param {string} selector - CSS selector
  * @returns {Element|null}
@@ -49,5 +85,5 @@ function getDateString() {
 
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { debounce, getDateString };
+    module.exports = { DAY_ABBREVIATIONS, escapeHtml, getSortedEntities, debounce, getDateString };
 }
