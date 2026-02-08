@@ -1,31 +1,37 @@
 /**
- * Schedulae - Derived Views Module (Teacher/Class/Room Timetables)
+ * Schedulae - Timetables Module (Teacher/Class/Room Timetables)
  */
 
 /**
- * Configuration for derived view entity types
+ * Configuration for timetable entity types
  */
-const DERIVED_VIEW_CONFIG = {
+const TIMETABLE_CONFIG = {
     'teachers': {
         title: 'Teacher Timetables',
         singularTitle: 'Teacher Timetable',
         slotField: 'teacherId',
         cellFields: ['studentGroupId', 'roomId', 'subjectId'],
-        cellLabels: ['Class', 'Room', 'Subject']
+        cellLabels: ['Class', 'Room', 'Subject'],
+        listContainerId: 'teachers-timetable-list',
+        sectionId: 'section-teachers'
     },
     'studentGroups': {
         title: 'Class Timetables',
         singularTitle: 'Class Timetable',
         slotField: 'studentGroupId',
         cellFields: ['teacherId', 'roomId', 'subjectId'],
-        cellLabels: ['Teacher', 'Room', 'Subject']
+        cellLabels: ['Teacher', 'Room', 'Subject'],
+        listContainerId: 'student-groups-timetable-list',
+        sectionId: 'section-student-groups'
     },
     'rooms': {
         title: 'Room Timetables',
         singularTitle: 'Room Timetable',
         slotField: 'roomId',
         cellFields: ['teacherId', 'studentGroupId', 'subjectId'],
-        cellLabels: ['Teacher', 'Class', 'Subject']
+        cellLabels: ['Teacher', 'Class', 'Subject'],
+        listContainerId: 'rooms-timetable-list',
+        sectionId: 'section-rooms'
     }
 };
 
@@ -40,133 +46,92 @@ const ENTITY_FIELD_MAP = {
 };
 
 /**
- * Show the derived view index page for a specific entity type
- * @param {string} entityType - Type of entity: 'teachers', 'studentGroups', 'rooms'
+ * Initialize the Timetables page
+ * Populates all three collapsible sections with entity lists
  */
-function showDerivedViewIndex(entityType) {
-    showPage('derived-views');
-
+function initTimetablesPage() {
     const data = loadData();
-    const config = DERIVED_VIEW_CONFIG[entityType];
 
-    if (!config) {
-        console.error('Unknown entity type:', entityType);
-        return;
+    // Populate each section
+    for (const [entityType, config] of Object.entries(TIMETABLE_CONFIG)) {
+        const entities = data ? data[entityType] : {};
+        populateTimetableSection(entityType, entities, config);
     }
-
-    const entities = data ? data[entityType] : {};
-    renderDerivedViewIndex(entityType, entities, config);
 }
 
 /**
- * Get the active state class for navigation links based on entity type
- * @param {string} currentType - Currently displayed entity type
- * @param {string} linkType - Link entity type to check
- * @returns {string} 'nav-active' or empty string
- */
-function getNavActiveClass(currentType, linkType) {
-    return currentType === linkType ? 'nav-active' : '';
-}
-
-/**
- * Render the derived view index page
+ * Populate a timetable section with entity links
  * @param {string} entityType - Type of entity
  * @param {Object} entities - Entities object from TimetableData
  * @param {Object} config - Configuration for this entity type
  */
-function renderDerivedViewIndex(entityType, entities, config) {
-    const container = $('#page-derived-views');
+function populateTimetableSection(entityType, entities, config) {
+    const container = $(`#${config.listContainerId}`);
     if (!container) return;
 
     const sortedEntities = getSortedEntities(entities);
-    const hasEntities = sortedEntities.length > 0;
 
-    let entityListHtml = '';
-    if (hasEntities) {
-        entityListHtml = '<ul class="entity-list">';
-        for (const [id, entity] of sortedEntities) {
-            entityListHtml += `<li><a href="#" class="entity-link" data-entity-type="${entityType}" data-entity-id="${id}" title="${escapeHtml(entity.name)}">${escapeHtml(entity.name)}</a></li>`;
-        }
-        entityListHtml += '</ul>';
-    } else {
-        entityListHtml = '<p class="no-entities">No entries found. <a href="#" id="add-entities-link">Go to Data Entry</a> to add some.</p>';
+    if (sortedEntities.length === 0) {
+        container.innerHTML = '<p class="no-entities">No entries found. <a href="#" class="go-to-setup-link">Go to Setup</a> to add some.</p>';
+        return;
     }
 
-    container.innerHTML = `
-        <header class="page-header">
-            <h1>Schedulae</h1>
-            <nav class="nav-links">
-                <a href="#" id="nav-back-to-main-from-index">Main View</a>
-                <span class="nav-separator">|</span>
-                <a href="#" id="nav-teacher-timetables-from-index" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
-                <a href="#" id="nav-student-group-timetables-from-index" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
-                <a href="#" id="nav-room-timetables-from-index" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
-            </nav>
-        </header>
-        <main class="content-card derived-view-content">
-            <h2>${config.title}</h2>
-            ${entityListHtml}
-        </main>
-    `;
-
-    // Add navigation listeners
-    setupDerivedViewNavigation(entityType);
-}
-
-/**
- * Set up a click handler for a navigation link if it exists and is not active
- * @param {string} selector - CSS selector for the link
- * @param {Function} handler - Click handler function
- */
-function setupNavLink(selector, handler) {
-    const link = $(selector);
-    if (link && !link.classList.contains('nav-active')) {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            handler();
-        });
+    let html = '<ul class="timetable-entity-list">';
+    for (const [id, entity] of sortedEntities) {
+        html += `<li><a href="#" class="timetable-entity-link" data-entity-type="${entityType}" data-entity-id="${id}" title="${escapeHtml(entity.name)}">${escapeHtml(entity.name)}</a></li>`;
     }
+    html += '</ul>';
+
+    container.innerHTML = html;
 }
 
 /**
- * Set up navigation links for the three derived view types
- * @param {string} suffix - Link ID suffix ('from-index' or 'from-individual')
+ * Set up event listeners for the Timetables page
  */
-function setupDerivedTypeNavigation(suffix) {
-    setupNavLink(`#nav-teacher-timetables-${suffix}`, () => showDerivedViewIndex('teachers'));
-    setupNavLink(`#nav-student-group-timetables-${suffix}`, () => showDerivedViewIndex('studentGroups'));
-    setupNavLink(`#nav-room-timetables-${suffix}`, () => showDerivedViewIndex('rooms'));
-}
-
-/**
- * Set up navigation event listeners for derived views
- * @param {string} currentEntityType - Currently displayed entity type (for index pages)
- */
-function setupDerivedViewNavigation(currentEntityType) {
-    // Back to main view
-    $$('#nav-back-to-main-from-index, #nav-back-to-main-from-individual').forEach(link => {
-        if (link) {
-            link.addEventListener('click', (e) => {
+function setupTimetablesEventListeners() {
+    // Use event delegation on the timetables list container
+    const timetablesList = $('#timetables-list');
+    if (timetablesList) {
+        timetablesList.addEventListener('click', (e) => {
+            // Handle entity link clicks
+            const entityLink = e.target.closest('.timetable-entity-link');
+            if (entityLink) {
                 e.preventDefault();
-                showPage('main-view');
-            });
-        }
-    });
+                showIndividualTimetable(entityLink.dataset.entityType, entityLink.dataset.entityId);
+                return;
+            }
 
-    // Derived view type navigation (both index and individual pages)
-    setupDerivedTypeNavigation('from-index');
-    setupDerivedTypeNavigation('from-individual');
-
-    // Entity links
-    $$('.entity-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            showIndividualTimetable(link.dataset.entityType, link.dataset.entityId);
+            // Handle "Go to Setup" links
+            const setupLink = e.target.closest('.go-to-setup-link');
+            if (setupLink) {
+                e.preventDefault();
+                showPage('setup');
+                return;
+            }
         });
-    });
+    }
 
-    // Data entry link for empty state
-    setupNavLink('#add-entities-link', () => showPage('data-entry'));
+    // Also set up event delegation for individual timetable page
+    const individualPage = $('#page-individual-timetable');
+    if (individualPage) {
+        individualPage.addEventListener('click', (e) => {
+            // Handle "Back to Timetables" link
+            const backLink = e.target.closest('#back-to-timetables');
+            if (backLink) {
+                e.preventDefault();
+                showPage('timetables');
+                return;
+            }
+
+            // Handle print button
+            const printBtn = e.target.closest('#print-timetable-btn');
+            if (printBtn) {
+                e.preventDefault();
+                window.print();
+                return;
+            }
+        });
+    }
 }
 
 /**
@@ -178,17 +143,18 @@ function showIndividualTimetable(entityType, entityId) {
     const data = loadData();
     if (!data) return;
 
-    const config = DERIVED_VIEW_CONFIG[entityType];
+    const config = TIMETABLE_CONFIG[entityType];
     if (!config) return;
 
     const entity = data[entityType][entityId];
     if (!entity) return;
 
     renderIndividualTimetable(entityType, entityId, entity, data, config);
+    showPage('individual-timetable');
 }
 
 /**
- * Render an individual timetable grid
+ * Render an individual timetable
  * @param {string} entityType - Type of entity
  * @param {string} entityId - ID of the entity
  * @param {Object} entity - The entity object
@@ -196,7 +162,7 @@ function showIndividualTimetable(entityType, entityId) {
  * @param {Object} config - Configuration for this entity type
  */
 function renderIndividualTimetable(entityType, entityId, entity, data, config) {
-    const container = $('#page-derived-views');
+    const container = $('#page-individual-timetable');
     if (!container) return;
 
     // Get slots for this entity
@@ -212,19 +178,14 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
     }
 
     container.innerHTML = `
-        <header class="page-header">
-            <h1>Schedulae</h1>
-            <nav class="nav-links">
-                <a href="#" id="nav-back-to-main-from-individual">Main View</a>
-                <span class="nav-separator">|</span>
-                <a href="#" id="nav-teacher-timetables-from-individual" class="${getNavActiveClass(entityType, 'teachers')}">Teacher Timetables</a>
-                <a href="#" id="nav-student-group-timetables-from-individual" class="${getNavActiveClass(entityType, 'studentGroups')}">Class Timetables</a>
-                <a href="#" id="nav-room-timetables-from-individual" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
-            </nav>
-        </header>
-        <main class="content-card derived-view-content">
-            <h2>${escapeHtml(entity.name)}</h2>
-            <p class="breadcrumb"><a href="#" id="nav-back-to-index">&larr; Back to ${config.title}</a></p>
+        <main class="content-card individual-timetable-content">
+            <div class="individual-timetable-header">
+                <h2>${escapeHtml(entity.name)}</h2>
+                <div class="individual-timetable-actions">
+                    <button type="button" id="print-timetable-btn" class="btn btn-secondary">Print</button>
+                </div>
+            </div>
+            <p class="breadcrumb"><a href="#" id="back-to-timetables">&larr; Back to Timetables</a></p>
             <div class="individual-grid-wrapper">
                 <div id="individual-timetable-grid" class="individual-timetable-grid"></div>
             </div>
@@ -234,17 +195,6 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
     // Render the grid
     const grid = $('#individual-timetable-grid');
     renderIndividualGrid(grid, data, slotMap, config);
-
-    // Add navigation listeners
-    const backToIndexLink = $('#nav-back-to-index');
-    if (backToIndexLink) {
-        backToIndexLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex(entityType);
-        });
-    }
-
-    setupDerivedViewNavigation(entityType);
 }
 
 /**
@@ -292,9 +242,6 @@ function renderIndividualGrid(grid, data, slotMap, config) {
             const slot = slotMap[day] && slotMap[day][period];
             if (slot) {
                 cell.appendChild(createIndividualCellContent(slot, data, config));
-            } else {
-                // Empty cell
-                cell.innerHTML = '<span class="empty-cell">\u2014</span>';
             }
 
             grid.appendChild(cell);
@@ -311,50 +258,44 @@ function renderIndividualGrid(grid, data, slotMap, config) {
  */
 function createIndividualCellContent(slot, data, config) {
     const fragment = document.createDocumentFragment();
-    let hasContent = false;
 
     for (let i = 0; i < config.cellFields.length; i++) {
         const field = config.cellFields[i];
         const label = config.cellLabels[i];
         const entityId = slot[field];
 
-        const line = document.createElement('div');
-        line.className = 'individual-cell-line';
-
         if (entityId) {
             const entityType = ENTITY_FIELD_MAP[field];
             const entity = data[entityType] && data[entityType][entityId];
             if (entity) {
+                const line = document.createElement('div');
+                line.className = 'individual-cell-line';
                 line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value" title="${escapeHtml(entity.name)}">${escapeHtml(entity.name)}</span>`;
-                hasContent = true;
-            } else {
-                line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value empty">\u2014</span>`;
+                fragment.appendChild(line);
             }
-        } else {
-            line.innerHTML = `<span class="cell-label">${escapeHtml(label)}:</span> <span class="cell-value empty">\u2014</span>`;
         }
-
-        fragment.appendChild(line);
-    }
-
-    // If no content at all, show em-dash
-    if (!hasContent) {
-        const emptySpan = document.createElement('span');
-        emptySpan.className = 'empty-cell';
-        emptySpan.textContent = '\u2014';
-        // Clear the fragment and just show empty
-        while (fragment.firstChild) {
-            fragment.removeChild(fragment.firstChild);
-        }
-        fragment.appendChild(emptySpan);
     }
 
     return fragment;
 }
 
+/**
+ * Get the active state class for navigation links based on entity type
+ * @param {string} currentType - Currently displayed entity type
+ * @param {string} linkType - Link entity type to check
+ * @returns {string} 'nav-active' or empty string
+ */
+function getNavActiveClass(currentType, linkType) {
+    return currentType === linkType ? 'nav-active' : '';
+}
+
+// Legacy aliases for backward compatibility with derived-views naming
+const DERIVED_VIEW_CONFIG = TIMETABLE_CONFIG;
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        TIMETABLE_CONFIG,
         DERIVED_VIEW_CONFIG,
         ENTITY_FIELD_MAP,
         getNavActiveClass

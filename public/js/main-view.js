@@ -593,49 +593,16 @@ function updateConflictHighlighting(data) {
 }
 
 /**
- * Set up event listeners for Main View navigation
+ * Set up event listeners for Timetable Builder (formerly Main View)
  */
 function setupMainViewEventListeners() {
-    const dataEntryLink = $('#nav-data-entry');
     const emptyStateLink = $('#empty-state-link');
     const grid = $('#timetable-grid');
-    const teacherTimetablesLink = $('#nav-teacher-timetables');
-    const studentGroupTimetablesLink = $('#nav-student-group-timetables');
-    const roomTimetablesLink = $('#nav-room-timetables');
-
-    if (dataEntryLink) {
-        dataEntryLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('data-entry');
-        });
-    }
 
     if (emptyStateLink) {
         emptyStateLink.addEventListener('click', (e) => {
             e.preventDefault();
-            showPage('data-entry');
-        });
-    }
-
-    // Derived view navigation links
-    if (teacherTimetablesLink) {
-        teacherTimetablesLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('teachers');
-        });
-    }
-
-    if (studentGroupTimetablesLink) {
-        studentGroupTimetablesLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('studentGroups');
-        });
-    }
-
-    if (roomTimetablesLink) {
-        roomTimetablesLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('rooms');
+            showPage('setup');
         });
     }
 

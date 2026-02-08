@@ -16,7 +16,7 @@ let activeEditState = null; // { entityType, entityId } or { entityType, isAddin
 let loadedSlots = [];
 
 /**
- * Initialize the Data Entry page
+ * Initialize the Setup page (formerly Data Entry)
  * Shows first-time setup or editing mode based on whether data exists
  */
 function initDataEntryPage() {
@@ -26,7 +26,6 @@ function initDataEntryPage() {
     // Get section elements
     const firstTimeSetup = $('#first-time-setup');
     const editingSection = $('#editing-section');
-    const mainViewLink = $('#nav-main-view-from-entry');
 
     // Clear any existing error messages
     clearFieldErrors();
@@ -55,9 +54,6 @@ function initDataEntryPage() {
         // Store slots for reference counting
         loadedSlots = data.slots || [];
 
-        // Show Main View link when data exists
-        if (mainViewLink) mainViewLink.classList.remove('page-hidden');
-
         // Render entity lists
         renderEntityList('student-groups-list', 'studentGroups');
         renderEntityList('rooms-list', 'rooms');
@@ -78,9 +74,6 @@ function initDataEntryPage() {
         entityState.rooms = { entities: {}, pendingDeletes: [] };
         entityState.subjects = { entities: {}, pendingDeletes: [] };
         loadedSlots = [];
-
-        // Hide Main View link for first-time users
-        if (mainViewLink) mainViewLink.classList.add('page-hidden');
     }
 
     // Reset active edit state
@@ -701,11 +694,10 @@ function handlePeriodChange(data, newCount) {
 
 
 /**
- * Set up event listeners for the Data Entry page
+ * Set up event listeners for the Setup page (formerly Data Entry)
  */
 function setupDataEntryEventListeners() {
     const form = $('#data-entry-form');
-    const mainViewLink = $('#nav-main-view-from-entry');
     const saveFileButton = $('#save-file-button');
     const loadFileButton = $('#load-file-button');
     const fileInput = $('#file-input');
@@ -717,13 +709,6 @@ function setupDataEntryEventListeners() {
         // Add delegated event listeners for entity editor clicks and keydowns
         form.addEventListener('click', handleEntityEditorClick);
         form.addEventListener('keydown', handleEntityEditorKeydown);
-    }
-
-    if (mainViewLink) {
-        mainViewLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('main-view');
-        });
     }
 
     // First-time setup
@@ -755,12 +740,12 @@ function setupDataEntryEventListeners() {
 }
 
 /**
- * Handle Save to File button click
+ * Handle Download timetable button click
  * Exports current timetable data to a JSON file
  */
 function handleSaveToFile() {
     if (exportToFile()) {
-        showFileStatus('Timetable saved successfully', false);
+        showFileStatus('Timetable downloaded successfully', false);
     }
 }
 
@@ -789,7 +774,7 @@ async function handleFileSelected(event) {
 
         // Check if data already exists and ask for confirmation
         if (hasExistingData()) {
-            if (!confirm('Loading this file will replace your current timetable. Continue?')) {
+            if (!confirm('Importing this file will replace your current timetable. All existing data will be lost. Continue?')) {
                 return;
             }
         }
@@ -798,8 +783,8 @@ async function handleFileSelected(event) {
         const result = importFromFile(text);
 
         if (result.success) {
-            showFileStatus('Timetable loaded successfully', false);
-            // Reinitialize the page to show loaded data
+            showFileStatus('Timetable imported successfully', false);
+            // Reinitialize the page to show imported data
             initDataEntryPage();
         } else {
             showFileStatus(result.error, true);
