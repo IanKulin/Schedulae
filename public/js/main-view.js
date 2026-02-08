@@ -63,15 +63,6 @@ function initMainViewPage() {
 }
 
 /**
- * Get teachers sorted by ID (entry order)
- * @param {Object} teachers - Teachers object from TimetableData
- * @returns {Array} Array of [id, teacher] pairs sorted by numeric ID
- */
-function getSortedTeachers(teachers) {
-    return Object.entries(teachers).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
-}
-
-/**
  * Find a slot for a specific day, period, and teacher
  * @param {Object} data - TimetableData object
  * @param {string} day - Day of the week
@@ -367,7 +358,7 @@ function applyTeacherDefaults(teacherId) {
  */
 function renderMainViewGrid(data) {
     const grid = $('#timetable-grid');
-    const teachers = getSortedTeachers(data.teachers);
+    const teachers = getSortedEntities(data.teachers);
     const periods = data.periods;
     const numTeachers = teachers.length;
 
