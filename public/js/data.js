@@ -629,6 +629,46 @@ function countSlotsForPeriods(data, newPeriodCount) {
 }
 
 /**
+ * Count the number of slots referencing a specific entity
+ * @param {string} entityType - Type of entity: 'studentGroups', 'rooms', 'subjects'
+ * @param {string} entityId - Entity ID to count references for
+ * @param {Object[]} slots - Array of slot objects
+ * @returns {number} Count of slots referencing this entity
+ */
+function countSlotsReferencingEntity(entityType, entityId, slots) {
+    const fieldMap = {
+        'studentGroups': 'studentGroupId',
+        'rooms': 'roomId',
+        'subjects': 'subjectId'
+    };
+
+    const field = fieldMap[entityType];
+    if (!field) {
+        return 0;
+    }
+
+    return slots.filter(slot => slot[field] === entityId).length;
+}
+
+/**
+ * Update an entity's name while preserving its ID
+ * @param {Object} entities - Entities object (e.g., data.studentGroups)
+ * @param {string} entityId - ID of entity to update
+ * @param {string} newName - New name for the entity
+ * @returns {Object} Updated entities object
+ */
+function updateEntityName(entities, entityId, newName) {
+    if (!entities[entityId]) {
+        return entities;
+    }
+
+    return {
+        ...entities,
+        [entityId]: { id: entityId, name: newName }
+    };
+}
+
+/**
  * Add periods to a timetable, creating new slots for all existing teachers
  * @param {Object} data - TimetableData object
  * @param {number} newPeriodCount - The new (higher) period count
@@ -706,6 +746,8 @@ if (typeof module !== 'undefined' && module.exports) {
         detectEntityConflicts,
         detectConflicts,
         countSlotsForPeriods,
+        countSlotsReferencingEntity,
+        updateEntityName,
         addPeriodsToTimetable,
         removePeriodsFromTimetable
     };

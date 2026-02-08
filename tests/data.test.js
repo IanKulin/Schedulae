@@ -22,6 +22,8 @@ const {
     validateTimetableData,
     importFromFile,
     countSlotsForPeriods,
+    countSlotsReferencingEntity,
+    updateEntityName,
     addPeriodsToTimetable,
     removePeriodsFromTimetable
 } = require('../public/js/data.js');
@@ -761,5 +763,89 @@ describe('period changes preserve unaffected data', () => {
         assert.ok(slot2);
         assert.strictEqual(slot1.studentGroupId, 'sg1');
         assert.strictEqual(slot2.studentGroupId, 'sg2');
+    });
+});
+
+// Entity Editing Feature Tests
+
+describe('countSlotsReferencingEntity', () => {
+    it('should count slots referencing a studentGroup', () => {
+        const slots = [
+            { id: '1', studentGroupId: '1' },
+            { id: '2', studentGroupId: '2' },
+            { id: '3', studentGroupId: '1' },
+            { id: '4', studentGroupId: null }
+        ];
+        assert.strictEqual(countSlotsReferencingEntity('studentGroups', '1', slots), 2);
+    });
+
+    it('should count slots referencing a room', () => {
+        const slots = [
+            { id: '1', roomId: '1' },
+            { id: '2', roomId: '1' },
+            { id: '3', roomId: '1' },
+            { id: '4', roomId: '2' }
+        ];
+        assert.strictEqual(countSlotsReferencingEntity('rooms', '1', slots), 3);
+    });
+
+    it('should count slots referencing a subject', () => {
+        const slots = [
+            { id: '1', subjectId: '1' },
+            { id: '2', subjectId: '2' }
+        ];
+        assert.strictEqual(countSlotsReferencingEntity('subjects', '1', slots), 1);
+    });
+
+    it('should return 0 for entity with no references', () => {
+        const slots = [
+            { id: '1', studentGroupId: '1' },
+            { id: '2', studentGroupId: '2' }
+        ];
+        assert.strictEqual(countSlotsReferencingEntity('studentGroups', '3', slots), 0);
+    });
+
+    it('should return 0 for invalid entity type', () => {
+        const slots = [
+            { id: '1', studentGroupId: '1' }
+        ];
+        assert.strictEqual(countSlotsReferencingEntity('invalid', '1', slots), 0);
+    });
+
+    it('should return 0 for empty slots array', () => {
+        assert.strictEqual(countSlotsReferencingEntity('studentGroups', '1', []), 0);
+    });
+});
+
+describe('updateEntityName', () => {
+    it('should update entity name while preserving ID', () => {
+        const entities = {
+            '1': { id: '1', name: 'Old Name' },
+            '2': { id: '2', name: 'Other' }
+        };
+        const result = updateEntityName(entities, '1', 'New Name');
+
+        assert.strictEqual(result['1'].id, '1');
+        assert.strictEqual(result['1'].name, 'New Name');
+        assert.strictEqual(result['2'].name, 'Other');
+    });
+
+    it('should return unchanged entities for non-existent ID', () => {
+        const entities = {
+            '1': { id: '1', name: 'Test' }
+        };
+        const result = updateEntityName(entities, '999', 'New Name');
+
+        assert.deepStrictEqual(result, entities);
+    });
+
+    it('should not mutate original entities object', () => {
+        const entities = {
+            '1': { id: '1', name: 'Original' }
+        };
+        const result = updateEntityName(entities, '1', 'Updated');
+
+        assert.strictEqual(entities['1'].name, 'Original');
+        assert.strictEqual(result['1'].name, 'Updated');
     });
 });
