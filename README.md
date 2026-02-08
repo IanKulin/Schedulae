@@ -26,6 +26,10 @@ A simple web application for creating school timetables. Designed for small scho
 - Runs entirely in the browser (no server-side processing required)
 - Optimised for desktop browsers (Chrome, Firefox, Safari, Edge)
 
+### File management
+
+Data is stored in LocalStorage in the web browser. Clearing browser data will delete the timetable. Use the export feature to download a file that contains your timetable data. It's also possible to import these files - for example if you are changing to a new browser.
+
 ## Installation
 
 Copy the contents of the `public` directory to your web server:
@@ -38,15 +42,6 @@ public/
 ```
 
 No build step required. The application runs from static files.
-
-For local development, you can use the included Express server:
-
-```bash
-npm install
-npm start
-```
-
-This starts a server at http://localhost:3000.
 
 ## Export/Import File Format
 
@@ -100,7 +95,18 @@ Timetables export as JSON files with the following structure:
 
 Exported files are named `schedulae-timetable-YYYY-MM-DD.json`.
 
-## Browser Storage
+## Developing
+
+Clone the repo and:
+```bash
+npm install
+npm start
+```
+This starts a server at http://localhost:3000.
+
+The node/express server is just serving the static files - there's no back end, but the tests run with the node built-in test runner.
+
+### Browser Storage
 
 Data is stored in LocalStorage under the key `timetableData`. Clearing browser data will delete the timetable. Use the export feature to back up your work.
 
