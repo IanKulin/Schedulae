@@ -125,7 +125,7 @@ npm test
 Tests use Node's built-in test runner.
 
 ### AI Disclosure
-AI tools were used in the development of this app
+AI tools were used in the development of this app.
 
 ### License
-
+[GPL3](https://github.com/IanKulin/Schedulae/blob/main/LICENSE)
