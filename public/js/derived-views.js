@@ -114,13 +114,37 @@ function renderDerivedViewIndex(entityType, entities, config) {
 }
 
 /**
+ * Set up a click handler for a navigation link if it exists and is not active
+ * @param {string} selector - CSS selector for the link
+ * @param {Function} handler - Click handler function
+ */
+function setupNavLink(selector, handler) {
+    const link = $(selector);
+    if (link && !link.classList.contains('nav-active')) {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            handler();
+        });
+    }
+}
+
+/**
+ * Set up navigation links for the three derived view types
+ * @param {string} suffix - Link ID suffix ('from-index' or 'from-individual')
+ */
+function setupDerivedTypeNavigation(suffix) {
+    setupNavLink(`#nav-teacher-timetables-${suffix}`, () => showDerivedViewIndex('teachers'));
+    setupNavLink(`#nav-studentgroup-timetables-${suffix}`, () => showDerivedViewIndex('studentGroups'));
+    setupNavLink(`#nav-room-timetables-${suffix}`, () => showDerivedViewIndex('rooms'));
+}
+
+/**
  * Set up navigation event listeners for derived views
  * @param {string} currentEntityType - Currently displayed entity type (for index pages)
  */
 function setupDerivedViewNavigation(currentEntityType) {
     // Back to main view
-    const backToMainLinks = $$('#nav-back-to-main-from-index, #nav-back-to-main-from-individual');
-    backToMainLinks.forEach(link => {
+    $$('#nav-back-to-main-from-index, #nav-back-to-main-from-individual').forEach(link => {
         if (link) {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -129,74 +153,20 @@ function setupDerivedViewNavigation(currentEntityType) {
         }
     });
 
-    // Derived view navigation links (from index pages)
-    const teacherLink = $('#nav-teacher-timetables-from-index');
-    if (teacherLink && !teacherLink.classList.contains('nav-active')) {
-        teacherLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('teachers');
-        });
-    }
+    // Derived view type navigation (both index and individual pages)
+    setupDerivedTypeNavigation('from-index');
+    setupDerivedTypeNavigation('from-individual');
 
-    const studentGroupLink = $('#nav-studentgroup-timetables-from-index');
-    if (studentGroupLink && !studentGroupLink.classList.contains('nav-active')) {
-        studentGroupLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('studentGroups');
-        });
-    }
-
-    const roomLink = $('#nav-room-timetables-from-index');
-    if (roomLink && !roomLink.classList.contains('nav-active')) {
-        roomLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('rooms');
-        });
-    }
-
-    // Derived view navigation links (from individual pages)
-    const teacherLinkIndiv = $('#nav-teacher-timetables-from-individual');
-    if (teacherLinkIndiv && !teacherLinkIndiv.classList.contains('nav-active')) {
-        teacherLinkIndiv.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('teachers');
-        });
-    }
-
-    const studentGroupLinkIndiv = $('#nav-studentgroup-timetables-from-individual');
-    if (studentGroupLinkIndiv && !studentGroupLinkIndiv.classList.contains('nav-active')) {
-        studentGroupLinkIndiv.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('studentGroups');
-        });
-    }
-
-    const roomLinkIndiv = $('#nav-room-timetables-from-individual');
-    if (roomLinkIndiv && !roomLinkIndiv.classList.contains('nav-active')) {
-        roomLinkIndiv.addEventListener('click', (e) => {
-            e.preventDefault();
-            showDerivedViewIndex('rooms');
-        });
-    }
-
-    // Add entity link listeners
+    // Entity links
     $$('.entity-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const type = link.dataset.entityType;
-            const id = link.dataset.entityId;
-            showIndividualTimetable(type, id);
+            showIndividualTimetable(link.dataset.entityType, link.dataset.entityId);
         });
     });
 
-    // Add link to data entry if no entities
-    const addEntitiesLink = $('#add-entities-link');
-    if (addEntitiesLink) {
-        addEntitiesLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('data-entry');
-        });
-    }
+    // Data entry link for empty state
+    setupNavLink('#add-entities-link', () => showPage('data-entry'));
 }
 
 /**

@@ -110,66 +110,49 @@ function handleCancel() {
 }
 
 /**
- * Handle form submission
- * Validates inputs, updates entities, creates slots, saves to LocalStorage
- * @param {Event} event - Form submit event
+ * Collect and parse form field values
+ * @returns {Object} Form data with periods and entity name arrays
  */
-function handleFormSubmit(event) {
-    event.preventDefault();
-
-    // Clear previous errors
-    clearFieldErrors();
-
-    // Get form values
-    const periodsInput = $('#periods-input');
-    const teachersInput = $('#teachers-input');
-    const studentGroupsInput = $('#studentgroups-input');
-    const roomsInput = $('#rooms-input');
-    const subjectsInput = $('#subjects-input');
-
-    // Parse textarea values into name arrays
-    const formData = {
-        periods: periodsInput.value,
-        teachers: parseTextareaToNames(teachersInput.value),
-        studentGroups: parseTextareaToNames(studentGroupsInput.value),
-        rooms: parseTextareaToNames(roomsInput.value),
-        subjects: parseTextareaToNames(subjectsInput.value)
+function collectFormData() {
+    return {
+        periods: $('#periods-input').value,
+        teachers: parseTextareaToNames($('#teachers-input').value),
+        studentGroups: parseTextareaToNames($('#studentgroups-input').value),
+        rooms: parseTextareaToNames($('#rooms-input').value),
+        subjects: parseTextareaToNames($('#subjects-input').value)
     };
+}
 
-    // Validate all inputs
-    const errors = validateAllInputs(formData);
+/**
+ * Display validation errors for each field
+ * @param {Object} errors - Validation errors keyed by field name
+ */
+function displayValidationErrors(errors) {
+    if (errors.periods) showFieldError('periods', errors.periods);
+    if (errors.teachers) showFieldError('teachers', errors.teachers);
+    if (errors.studentGroups) showFieldError('studentgroups', errors.studentGroups);
+    if (errors.rooms) showFieldError('rooms', errors.rooms);
+    if (errors.subjects) showFieldError('subjects', errors.subjects);
+}
 
-    // Display any errors
-    if (hasValidationErrors(errors)) {
-        if (errors.periods) showFieldError('periods', errors.periods);
-        if (errors.teachers) showFieldError('teachers', errors.teachers);
-        if (errors.studentGroups) showFieldError('studentgroups', errors.studentGroups);
-        if (errors.rooms) showFieldError('rooms', errors.rooms);
-        if (errors.subjects) showFieldError('subjects', errors.subjects);
-        return;
-    }
-
-    // Load existing data or create new
-    let data = loadData();
-    const isFirstSave = data === null;
-
-    if (isFirstSave) {
-        data = createEmptyTimetableData(parseInt(formData.periods, 10));
-    }
-
+/**
+ * Sync all entity types and update slots accordingly
+ * @param {Object} data - TimetableData object
+ * @param {Object} formData - Parsed form data
+ * @returns {string[]} IDs of newly created teachers
+ */
+function syncAllEntities(data, formData) {
     // Sync teachers and track new ones (for slot creation)
     const teacherSync = syncEntities(data.teachers, formData.teachers, 'teachers', data);
     const newTeacherIds = Object.keys(teacherSync.entities).filter(
         id => !data.teachers[id]
     );
 
-    // For deleted teachers, we need to remove their slots entirely
-    // (slots are uniquely tied to teachers)
+    // For deleted teachers, remove their slots entirely (slots are uniquely tied to teachers)
     if (teacherSync.deletedIds.length > 0) {
         const deletedTeacherSet = new Set(teacherSync.deletedIds);
         data.slots = data.slots.filter(slot => !deletedTeacherSet.has(slot.teacherId));
     }
-
     data.teachers = teacherSync.entities;
 
     // Sync other entities and orphan their slot references
@@ -185,6 +168,67 @@ function handleFormSubmit(event) {
     data.slots = orphanSlotReferences(data.slots, 'subjectId', subjectSync.deletedIds);
     data.subjects = subjectSync.entities;
 
+    return newTeacherIds;
+}
+
+/**
+ * Handle changes to period count with user confirmation for reduction
+ * @param {Object} data - TimetableData object
+ * @param {number} newCount - New period count
+ * @returns {boolean} True if change was applied, false if cancelled
+ */
+function handlePeriodChange(data, newCount) {
+    const currentCount = data.periods.length;
+
+    if (newCount > currentCount) {
+        addPeriodsToTimetable(data, newCount);
+        return true;
+    } else if (newCount < currentCount) {
+        const affectedSlots = countSlotsForPeriods(data, newCount);
+        const periodsToRemove = currentCount - newCount;
+        const periodNumbers = [];
+        for (let p = newCount + 1; p <= currentCount; p++) {
+            periodNumbers.push(p);
+        }
+        const periodList = periodNumbers.join(', ');
+
+        const message = `Reducing periods from ${currentCount} to ${newCount} will permanently delete all data for period${periodsToRemove > 1 ? 's' : ''} ${periodList}. This will affect ${affectedSlots} slot${affectedSlots !== 1 ? 's' : ''}. Are you sure?`;
+
+        if (!confirm(message)) {
+            return false;
+        }
+
+        removePeriodsFromTimetable(data, newCount);
+    }
+    return true;
+}
+
+/**
+ * Handle form submission
+ * Validates inputs, updates entities, creates slots, saves to LocalStorage
+ * @param {Event} event - Form submit event
+ */
+function handleFormSubmit(event) {
+    event.preventDefault();
+    clearFieldErrors();
+
+    const formData = collectFormData();
+    const errors = validateAllInputs(formData);
+
+    if (hasValidationErrors(errors)) {
+        displayValidationErrors(errors);
+        return;
+    }
+
+    let data = loadData();
+    const isFirstSave = data === null;
+
+    if (isFirstSave) {
+        data = createEmptyTimetableData(parseInt(formData.periods, 10));
+    }
+
+    const newTeacherIds = syncAllEntities(data, formData);
+
     // Create slots for new teachers
     for (const teacherId of newTeacherIds) {
         const newSlots = createSlotsForTeacher(teacherId, data.periods);
@@ -192,36 +236,14 @@ function handleFormSubmit(event) {
     }
 
     // Handle period count changes
-    const currentPeriodCount = data.periods.length;
     const newPeriodCount = parseInt(formData.periods, 10);
-
-    if (newPeriodCount > currentPeriodCount) {
-        // Adding periods
-        addPeriodsToTimetable(data, newPeriodCount);
-    } else if (newPeriodCount < currentPeriodCount) {
-        // Removing periods - confirm with user
-        const affectedSlots = countSlotsForPeriods(data, newPeriodCount);
-        const periodsToRemove = currentPeriodCount - newPeriodCount;
-        const periodNumbers = [];
-        for (let p = newPeriodCount + 1; p <= currentPeriodCount; p++) {
-            periodNumbers.push(p);
-        }
-        const periodList = periodNumbers.join(', ');
-
-        const message = `Reducing periods from ${currentPeriodCount} to ${newPeriodCount} will permanently delete all data for period${periodsToRemove > 1 ? 's' : ''} ${periodList}. This will affect ${affectedSlots} slot${affectedSlots !== 1 ? 's' : ''}. Are you sure?`;
-
-        if (!confirm(message)) {
-            return; // User cancelled - abort save
-        }
-
-        removePeriodsFromTimetable(data, newPeriodCount);
+    if (!handlePeriodChange(data, newPeriodCount)) {
+        return; // User cancelled period reduction
     }
 
-    // Save to LocalStorage
     if (saveData(data)) {
         showPage('main-view');
     } else {
-        // Show generic error if save fails
         showFieldError('periods', 'Failed to save data. Please try again.');
     }
 }
