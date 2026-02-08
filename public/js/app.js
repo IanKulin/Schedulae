@@ -433,7 +433,7 @@ function getSlotForCell(data, day, period, teacherId) {
  */
 function createDropdown(type, options, selectedId, slotId) {
     const select = document.createElement('select');
-    select.className = 'cell-dropdown';
+    select.className = 'dropdown cell-dropdown';
     select.dataset.slotId = slotId;
     select.dataset.field = type + 'Id'; // e.g., 'studentGroupId', 'roomId', 'subjectId'
 
@@ -593,7 +593,7 @@ function createDefaultsPanel(teacherId, data) {
  */
 function createDefaultsDropdown(field, options, teacherId) {
     const select = document.createElement('select');
-    select.className = 'defaults-dropdown';
+    select.className = 'dropdown defaults-dropdown';
     select.dataset.field = field;
     select.dataset.teacherId = teacherId;
 
@@ -1154,7 +1154,7 @@ function renderDerivedViewIndex(entityType, entities, config) {
                 <a href="#" id="nav-room-timetables-from-index" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
-        <main class="derived-view-content">
+        <main class="content-card derived-view-content">
             <h2>${config.title}</h2>
             ${entityListHtml}
         </main>
@@ -1303,7 +1303,7 @@ function renderIndividualTimetable(entityType, entityId, entity, data, config) {
                 <a href="#" id="nav-room-timetables-from-individual" class="${getNavActiveClass(entityType, 'rooms')}">Room Timetables</a>
             </nav>
         </header>
-        <main class="derived-view-content">
+        <main class="content-card derived-view-content">
             <h2>${escapeHtml(entity.name)}</h2>
             <p class="breadcrumb"><a href="#" id="nav-back-to-index">&larr; Back to ${config.title}</a></p>
             <div class="individual-grid-wrapper">
