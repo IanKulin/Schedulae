@@ -17,30 +17,31 @@ let loadedSlots = [];
 
 /**
  * Initialize the Data Entry page
- * Populates form fields with existing data if available
+ * Shows first-time setup or editing mode based on whether data exists
  */
 function initDataEntryPage() {
     const data = loadData();
     const dataExists = data !== null;
 
-    // Get form elements
-    const periodsInput = $('#periods-input');
-    const teachersInput = $('#teachers-input');
-    const cancelButton = $('#cancel-button');
+    // Get section elements
+    const firstTimeSetup = $('#first-time-setup');
+    const editingSection = $('#editing-section');
     const mainViewLink = $('#nav-main-view-from-entry');
-    const saveFileButton = $('#save-file-button');
 
     // Clear any existing error messages
     clearFieldErrors();
     clearFileStatus();
 
-    // Update Save to File button state
-    if (saveFileButton) {
-        saveFileButton.disabled = !dataExists;
-    }
-
     if (dataExists) {
-        // Populate periods (field remains enabled to allow editing)
+        // Show editing section, hide first-time setup
+        firstTimeSetup.classList.add('page-hidden');
+        editingSection.classList.remove('page-hidden');
+
+        // Get form elements
+        const periodsInput = $('#periods-input');
+        const teachersInput = $('#teachers-input');
+
+        // Populate periods
         periodsInput.value = data.periods.length;
 
         // Populate teachers (still uses textarea)
@@ -54,14 +55,23 @@ function initDataEntryPage() {
         // Store slots for reference counting
         loadedSlots = data.slots || [];
 
-        // Show cancel button and Main View link when data exists
-        cancelButton.classList.remove('page-hidden');
+        // Show Main View link when data exists
         if (mainViewLink) mainViewLink.classList.remove('page-hidden');
+
+        // Render entity lists
+        renderEntityList('student-groups-list', 'studentGroups');
+        renderEntityList('rooms-list', 'rooms');
+        renderEntityList('subjects-list', 'subjects');
     } else {
-        // Reset form to defaults
-        periodsInput.value = 6;
-        periodsInput.disabled = false;
-        teachersInput.value = '';
+        // Show first-time setup, hide editing section
+        firstTimeSetup.classList.remove('page-hidden');
+        editingSection.classList.add('page-hidden');
+
+        // Reset initial periods input
+        const initialPeriodsInput = $('#initial-periods');
+        if (initialPeriodsInput) {
+            initialPeriodsInput.value = 6;
+        }
 
         // Initialize empty entity state
         entityState.studentGroups = { entities: {}, pendingDeletes: [] };
@@ -69,18 +79,12 @@ function initDataEntryPage() {
         entityState.subjects = { entities: {}, pendingDeletes: [] };
         loadedSlots = [];
 
-        // Hide cancel button and Main View link for first-time users
-        cancelButton.classList.add('page-hidden');
+        // Hide Main View link for first-time users
         if (mainViewLink) mainViewLink.classList.add('page-hidden');
     }
 
     // Reset active edit state
     activeEditState = null;
-
-    // Render entity lists
-    renderEntityList('student-groups-list', 'studentGroups');
-    renderEntityList('rooms-list', 'rooms');
-    renderEntityList('subjects-list', 'subjects');
 }
 
 /**
@@ -318,7 +322,23 @@ function enterAddMode(entityType) {
 }
 
 /**
- * Save an edit operation
+ * Save current entity state to LocalStorage
+ * @returns {boolean} True if save succeeded
+ */
+function saveCurrentState() {
+    let data = loadData();
+    if (!data) return false;
+
+    // Apply current entity state
+    data.studentGroups = { ...entityState.studentGroups.entities };
+    data.rooms = { ...entityState.rooms.entities };
+    data.subjects = { ...entityState.subjects.entities };
+
+    return saveData(data);
+}
+
+/**
+ * Save an edit operation (with immediate persistence)
  */
 function saveEdit(entityType, entityId) {
     const container = getContainerForType(entityType);
@@ -341,6 +361,9 @@ function saveEdit(entityType, entityId) {
     // Update entity name
     entityState[entityType].entities[entityId] = { id: entityId, name: newName };
 
+    // Save immediately to LocalStorage
+    saveCurrentState();
+
     // Exit edit mode
     activeEditState = null;
     renderAllEntityLists();
@@ -356,7 +379,7 @@ function cancelEdit(entityType) {
 }
 
 /**
- * Save an add operation
+ * Save an add operation (with immediate persistence)
  */
 function saveAdd(entityType) {
     const container = getContainerForType(entityType);
@@ -380,6 +403,9 @@ function saveAdd(entityType) {
     const newId = generateNewEntityId(entityType);
     entityState[entityType].entities[newId] = { id: newId, name: newName };
 
+    // Save immediately to LocalStorage
+    saveCurrentState();
+
     // Exit add mode
     activeEditState = null;
     renderAllEntityLists();
@@ -395,7 +421,7 @@ function cancelAdd(entityType) {
 }
 
 /**
- * Handle delete of an entity
+ * Handle delete of an entity (with immediate persistence)
  */
 function handleDelete(entityType, entityId) {
     const entity = entityState[entityType].entities[entityId];
@@ -414,9 +440,27 @@ function handleDelete(entityType, entityId) {
         return;
     }
 
-    // Mark for deletion and remove from entities
-    entityState[entityType].pendingDeletes.push(entityId);
+    // Remove from entities
     delete entityState[entityType].entities[entityId];
+
+    // Apply orphaning and save immediately
+    let data = loadData();
+    if (data) {
+        const fieldMap = {
+            'studentGroups': 'studentGroupId',
+            'rooms': 'roomId',
+            'subjects': 'subjectId'
+        };
+        data.slots = orphanSlotReferences(data.slots, fieldMap[entityType], [entityId]);
+        data[entityType] = { ...entityState[entityType].entities };
+        saveData(data);
+
+        // Update loaded slots reference
+        loadedSlots = data.slots;
+    }
+
+    // Clear pending deletes (no longer needed with immediate saves)
+    entityState[entityType].pendingDeletes = [];
 
     renderAllEntityLists();
 }
@@ -515,83 +559,113 @@ function clearFieldErrors() {
 }
 
 /**
- * Handle cancel button click
- * Discards form changes and returns to Main View
+ * Show visual feedback when a save succeeds
+ * @param {string} buttonId - ID of the button (without # prefix)
  */
-function handleCancel() {
-    showPage('main-view');
-}
-
-/**
- * Collect and parse form field values
- * Now collects from entity state instead of textareas for studentGroups/rooms/subjects
- * @returns {Object} Form data with periods and entity name arrays
- */
-function collectFormData() {
-    return {
-        periods: $('#periods-input').value,
-        teachers: parseTextareaToNames($('#teachers-input').value),
-        studentGroups: getEntityNamesFromState('studentGroups'),
-        rooms: getEntityNamesFromState('rooms'),
-        subjects: getEntityNamesFromState('subjects')
-    };
-}
-
-/**
- * Get entity names array from entity state
- */
-function getEntityNamesFromState(entityType) {
-    const entities = entityState[entityType].entities;
-    const sortedIds = Object.keys(entities).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-    return sortedIds.map(id => entities[id].name);
-}
-
-/**
- * Display validation errors for each field
- * @param {Object} errors - Validation errors keyed by field name
- */
-function displayValidationErrors(errors) {
-    if (errors.periods) showFieldError('periods', errors.periods);
-    if (errors.teachers) showFieldError('teachers', errors.teachers);
-    if (errors.studentGroups) showFieldError('student-groups', errors.studentGroups);
-    if (errors.rooms) showFieldError('rooms', errors.rooms);
-    if (errors.subjects) showFieldError('subjects', errors.subjects);
-}
-
-/**
- * Sync all entity types and update slots accordingly
- * Modified to use entity state for studentGroups/rooms/subjects
- * @param {Object} data - TimetableData object
- * @param {Object} formData - Parsed form data
- * @returns {string[]} IDs of newly created teachers
- */
-function syncAllEntities(data, formData) {
-    // Sync teachers and track new ones (for slot creation) - still uses name matching
-    const teacherSync = syncEntities(data.teachers, formData.teachers, 'teachers', data);
-    const newTeacherIds = Object.keys(teacherSync.entities).filter(
-        id => !data.teachers[id]
-    );
-
-    // For deleted teachers, remove their slots entirely (slots are uniquely tied to teachers)
-    if (teacherSync.deletedIds.length > 0) {
-        const deletedTeacherSet = new Set(teacherSync.deletedIds);
-        data.slots = data.slots.filter(slot => !deletedTeacherSet.has(slot.teacherId));
+function showSaveConfirmation(buttonId) {
+    const btn = $(`#${buttonId}`);
+    if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = 'Saved ✓';
+        btn.classList.add('save-success');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('save-success');
+        }, 1500);
     }
+}
+
+/**
+ * Handle Save Teachers button click
+ * Saves teachers from textarea to LocalStorage immediately
+ */
+function handleSaveTeachers() {
+    const teachersText = $('#teachers-input').value;
+    const names = parseTextareaToNames(teachersText);
+
+    // Validate
+    const errors = validateEntityNames(names);
+    if (errors.length > 0) {
+        showFieldError('teachers', errors[0]);
+        return;
+    }
+
+    let data = loadData();
+    if (!data) return;
+
+    // Sync teachers (existing logic)
+    const teacherSync = syncEntities(data.teachers, names, 'teachers', data);
+
+    // Handle deleted teachers - remove their slots
+    if (teacherSync.deletedIds.length > 0) {
+        const deletedSet = new Set(teacherSync.deletedIds);
+        data.slots = data.slots.filter(slot => !deletedSet.has(slot.teacherId));
+    }
+
+    // Create slots for new teachers
+    const newTeacherIds = Object.keys(teacherSync.entities).filter(id => !data.teachers[id]);
+    for (const teacherId of newTeacherIds) {
+        const newSlots = createSlotsForTeacher(teacherId, data.periods);
+        data.slots.push(...newSlots);
+    }
+
     data.teachers = teacherSync.entities;
 
-    // For studentGroups, rooms, subjects - use entity state directly (preserves IDs)
-    // Apply pending deletes by orphaning slot references
-    data.slots = orphanSlotReferences(data.slots, 'studentGroupId', entityState.studentGroups.pendingDeletes);
-    data.studentGroups = { ...entityState.studentGroups.entities };
-
-    data.slots = orphanSlotReferences(data.slots, 'roomId', entityState.rooms.pendingDeletes);
-    data.rooms = { ...entityState.rooms.entities };
-
-    data.slots = orphanSlotReferences(data.slots, 'subjectId', entityState.subjects.pendingDeletes);
-    data.subjects = { ...entityState.subjects.entities };
-
-    return newTeacherIds;
+    if (saveData(data)) {
+        showFieldError('teachers', ''); // Clear any error
+        showSaveConfirmation('save-teachers-btn');
+        // Update loaded slots reference
+        loadedSlots = data.slots;
+    }
 }
+
+/**
+ * Handle Save Periods button click
+ * Saves period count to LocalStorage immediately
+ */
+function handleSavePeriods() {
+    const periodsValue = $('#periods-input').value;
+    const newCount = parseInt(periodsValue, 10);
+
+    // Validate
+    if (isNaN(newCount) || newCount < 1 || newCount > 12) {
+        showFieldError('periods', 'Periods must be between 1 and 12');
+        return;
+    }
+
+    let data = loadData();
+    if (!data) return;
+
+    // Use existing period change logic (includes confirmation for reduction)
+    if (handlePeriodChange(data, newCount)) {
+        if (saveData(data)) {
+            showFieldError('periods', '');
+            showSaveConfirmation('save-periods-btn');
+            // Update loaded slots reference
+            loadedSlots = data.slots;
+        }
+    }
+}
+
+/**
+ * Handle Create Timetable button click
+ * Creates initial timetable data structure
+ */
+function handleCreateTimetable() {
+    const periodsValue = $('#initial-periods').value;
+    const periodCount = parseInt(periodsValue, 10);
+
+    if (isNaN(periodCount) || periodCount < 1 || periodCount > 12) {
+        showFieldError('initial-periods', 'Periods must be between 1 and 12');
+        return;
+    }
+
+    const data = createEmptyTimetableData(periodCount);
+    if (saveData(data)) {
+        initDataEntryPage(); // Reinitialize to show editing mode
+    }
+}
+
 
 /**
  * Handle changes to period count with user confirmation for reduction
@@ -625,87 +699,24 @@ function handlePeriodChange(data, newCount) {
     return true;
 }
 
-/**
- * Handle form submission
- * Validates inputs, updates entities, creates slots, saves to LocalStorage
- * @param {Event} event - Form submit event
- */
-function handleFormSubmit(event) {
-    event.preventDefault();
-
-    // Exit any active edit mode first
-    if (activeEditState) {
-        // Try to save the current edit
-        if (activeEditState.isAdding) {
-            saveAdd(activeEditState.entityType);
-        } else {
-            saveEdit(activeEditState.entityType, activeEditState.entityId);
-        }
-        // If still in edit mode after save attempt, there was a validation error
-        if (activeEditState) {
-            return;
-        }
-    }
-
-    clearFieldErrors();
-
-    const formData = collectFormData();
-    const errors = validateAllInputs(formData);
-
-    if (hasValidationErrors(errors)) {
-        displayValidationErrors(errors);
-        return;
-    }
-
-    let data = loadData();
-    const isFirstSave = data === null;
-
-    if (isFirstSave) {
-        data = createEmptyTimetableData(parseInt(formData.periods, 10));
-    }
-
-    const newTeacherIds = syncAllEntities(data, formData);
-
-    // Create slots for new teachers
-    for (const teacherId of newTeacherIds) {
-        const newSlots = createSlotsForTeacher(teacherId, data.periods);
-        data.slots.push(...newSlots);
-    }
-
-    // Handle period count changes
-    const newPeriodCount = parseInt(formData.periods, 10);
-    if (!handlePeriodChange(data, newPeriodCount)) {
-        return; // User cancelled period reduction
-    }
-
-    if (saveData(data)) {
-        showPage('main-view');
-    } else {
-        showFieldError('periods', 'Failed to save data. Please try again.');
-    }
-}
 
 /**
- * Set up event listeners for the Data Entry form
+ * Set up event listeners for the Data Entry page
  */
 function setupDataEntryEventListeners() {
     const form = $('#data-entry-form');
-    const cancelButton = $('#cancel-button');
     const mainViewLink = $('#nav-main-view-from-entry');
     const saveFileButton = $('#save-file-button');
     const loadFileButton = $('#load-file-button');
     const fileInput = $('#file-input');
+    const createTimetableBtn = $('#create-timetable-btn');
+    const savePeriodsBtn = $('#save-periods-btn');
+    const saveTeachersBtn = $('#save-teachers-btn');
 
     if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-
         // Add delegated event listeners for entity editor clicks and keydowns
         form.addEventListener('click', handleEntityEditorClick);
         form.addEventListener('keydown', handleEntityEditorKeydown);
-    }
-
-    if (cancelButton) {
-        cancelButton.addEventListener('click', handleCancel);
     }
 
     if (mainViewLink) {
@@ -713,6 +724,20 @@ function setupDataEntryEventListeners() {
             e.preventDefault();
             showPage('main-view');
         });
+    }
+
+    // First-time setup
+    if (createTimetableBtn) {
+        createTimetableBtn.addEventListener('click', handleCreateTimetable);
+    }
+
+    // Immediate save buttons
+    if (savePeriodsBtn) {
+        savePeriodsBtn.addEventListener('click', handleSavePeriods);
+    }
+
+    if (saveTeachersBtn) {
+        saveTeachersBtn.addEventListener('click', handleSaveTeachers);
     }
 
     // File operation event listeners

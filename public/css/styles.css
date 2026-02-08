@@ -616,6 +616,49 @@ a:hover {
     font-size: 14px;
 }
 
+/* Field save buttons */
+.field-with-save {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.form-group-inline .field-with-save {
+    display: inline-flex;
+}
+
+.save-field-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-card);
+    color: var(--color-primary);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.save-field-btn:hover {
+    background-color: var(--color-primary);
+    color: var(--color-bg-card);
+}
+
+.save-field-btn.save-success {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+    color: var(--color-bg-card);
+}
+
+/* First-time setup */
+#first-time-setup {
+    max-width: 400px;
+}
+
+#first-time-setup h2 {
+    margin-bottom: var(--spacing-sm);
+}
+
 /* 7.3 Main View */
 .empty-state {
     text-align: center;

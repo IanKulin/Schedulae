@@ -18,62 +18,75 @@
             </header>
 
             <main class="content-card data-entry-content">
-                <!-- File Operations Section -->
-                <section class="file-operations">
-                    <h3>File Operations</h3>
-                    <div class="file-operations-buttons">
-                        <button type="button" id="save-file-button" class="btn btn-secondary" disabled>Save to File</button>
-                        <button type="button" id="load-file-button" class="btn btn-secondary">Load from File</button>
-                    </div>
-                    <input type="file" id="file-input" accept=".json" class="page-hidden">
-                    <div id="file-status" class="file-status"></div>
-                </section>
-
-                <h2>Data Entry</h2>
-                <p class="form-description">Enter the basic information for your timetable. Each entity should be on its own line.</p>
-
-                <form id="data-entry-form" class="data-entry-form">
-                    <!-- Periods -->
+                <!-- First-Time Setup (shown when no data exists) -->
+                <div id="first-time-setup" class="page-hidden">
+                    <h2>Create Timetable</h2>
+                    <p class="form-description">Set up your timetable by entering the number of periods per day.</p>
                     <div class="form-group">
-                        <label for="periods-input">Number of Periods per Day</label>
-                        <input type="number" id="periods-input" name="periods" min="1" max="20" value="6">
-                        <span class="field-error" id="periods-error"></span>
+                        <label for="initial-periods">Periods per Day</label>
+                        <input type="number" id="initial-periods" min="1" max="12" value="6">
+                        <span class="field-error" id="initial-periods-error"></span>
                     </div>
+                    <button type="button" id="create-timetable-btn" class="btn btn-primary">Create Timetable</button>
+                </div>
 
-                    <!-- Teachers -->
-                    <div class="form-group">
-                        <label for="teachers-input">Teachers</label>
-                        <textarea id="teachers-input" name="teachers" rows="6" placeholder="Enter one teacher name per line&#10;e.g.&#10;Ms. Smith&#10;Mr. Jones&#10;Dr. Brown"></textarea>
-                        <span class="field-error" id="teachers-error"></span>
-                    </div>
+                <!-- Editing Section (shown when data exists) -->
+                <div id="editing-section" class="page-hidden">
+                    <!-- File Operations Section -->
+                    <section class="file-operations">
+                        <h3>File Operations</h3>
+                        <div class="file-operations-buttons">
+                            <button type="button" id="save-file-button" class="btn btn-secondary">Save to File</button>
+                            <button type="button" id="load-file-button" class="btn btn-secondary">Load from File</button>
+                        </div>
+                        <input type="file" id="file-input" accept=".json" class="page-hidden">
+                        <div id="file-status" class="file-status"></div>
+                    </section>
 
-                    <!-- Student Groups -->
-                    <div class="form-group">
-                        <label>Student Groups</label>
-                        <div id="student-groups-list" class="entity-editor"></div>
-                        <span class="field-error" id="student-groups-error"></span>
-                    </div>
+                    <h2>Data Entry</h2>
+                    <p class="form-description">Edit your timetable data. Changes are saved immediately.</p>
 
-                    <!-- Rooms -->
-                    <div class="form-group">
-                        <label>Rooms</label>
-                        <div id="rooms-list" class="entity-editor"></div>
-                        <span class="field-error" id="rooms-error"></span>
-                    </div>
+                    <div id="data-entry-form" class="data-entry-form">
+                        <!-- Periods -->
+                        <div class="form-group form-group-inline">
+                            <label for="periods-input">Periods per Day</label>
+                            <div class="field-with-save">
+                                <input type="number" id="periods-input" min="1" max="12" value="6">
+                                <button type="button" id="save-periods-btn" class="save-field-btn">Save</button>
+                            </div>
+                            <span class="field-error" id="periods-error"></span>
+                        </div>
 
-                    <!-- Subjects -->
-                    <div class="form-group">
-                        <label>Subjects</label>
-                        <div id="subjects-list" class="entity-editor"></div>
-                        <span class="field-error" id="subjects-error"></span>
-                    </div>
+                        <!-- Teachers -->
+                        <div class="form-group">
+                            <label for="teachers-input">Teachers</label>
+                            <textarea id="teachers-input" rows="6" placeholder="Enter one teacher name per line&#10;e.g.&#10;Ms. Smith&#10;Mr. Jones&#10;Dr. Brown"></textarea>
+                            <button type="button" id="save-teachers-btn" class="save-field-btn">Save Teachers</button>
+                            <span class="field-error" id="teachers-error"></span>
+                        </div>
 
-                    <!-- Form Actions -->
-                    <div class="form-actions">
-                        <button type="submit" id="save-button" class="btn btn-primary">Save</button>
-                        <button type="button" id="cancel-button" class="btn btn-secondary page-hidden">Cancel</button>
+                        <!-- Student Groups -->
+                        <div class="form-group">
+                            <label>Student Groups</label>
+                            <div id="student-groups-list" class="entity-editor"></div>
+                            <span class="field-error" id="student-groups-error"></span>
+                        </div>
+
+                        <!-- Rooms -->
+                        <div class="form-group">
+                            <label>Rooms</label>
+                            <div id="rooms-list" class="entity-editor"></div>
+                            <span class="field-error" id="rooms-error"></span>
+                        </div>
+
+                        <!-- Subjects -->
+                        <div class="form-group">
+                            <label>Subjects</label>
+                            <div id="subjects-list" class="entity-editor"></div>
+                            <span class="field-error" id="subjects-error"></span>
+                        </div>
                     </div>
-                </form>
+                </div>
             </main>
         </div>
 
