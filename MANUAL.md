@@ -87,6 +87,12 @@ You can manage teachers without leaving the builder:
 - **Click a teacher's name** to enter edit mode. You can rename them, delete them, or add a new teacher column next to them.
 - Press **Enter** to save a rename, or **Escape** to cancel.
 
+#### Editing Period names in the Builder
+
+You can manage Periods without leaving the builder:
+- **Click a period's name** to enter edit mode. You can rename them.
+- Press **Enter** to save a rename, or **Escape** to cancel.
+
 ---
 
 ### Step 5: Check for Conflicts
