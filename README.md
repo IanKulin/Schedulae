@@ -13,6 +13,7 @@ A simple web application for creating school timetables. Designed for small scho
 ### Main Editing View
 - Grid-based interface with teachers as columns and day/period as rows
 - Assign student groups, rooms, and subjects to each slot via dropdown menus
+- Add/edit/delete teachers
 - Changes save automatically
 - Sticky headers for easy navigation of large timetables
 - Timetabling conflicts highlighted
@@ -62,6 +63,9 @@ Timetables export as JSON files with the following structure:
   ]
 }
 ```
+
+## User manual
+See [user manual here](MANUAL.md)
 
 ### Field Reference
 
