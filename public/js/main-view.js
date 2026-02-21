@@ -627,9 +627,8 @@ function handleDropdownChange(event) {
 /**
  * Show conflict tooltip near the hovered cell
  * @param {HTMLElement} cell - The cell element with conflicts
- * @param {MouseEvent} event - The mouse event
  */
-function showConflictTooltip(cell, event) {
+function showConflictTooltip(cell) {
     // Remove any existing tooltip
     hideConflictTooltip();
 
@@ -878,7 +877,7 @@ function setupMainViewEventListeners() {
         grid.addEventListener('mouseenter', (e) => {
             const cell = e.target.closest('.cell-conflict');
             if (cell) {
-                showConflictTooltip(cell, e);
+                showConflictTooltip(cell);
             }
         }, true);
 
