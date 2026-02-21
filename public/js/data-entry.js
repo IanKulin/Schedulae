@@ -15,6 +15,12 @@ let activeEditState = null; // { entityType, entityId } or { entityType, isAddin
 // Reference to loaded slots for counting references
 let loadedSlots = [];
 
+const ENTITY_CONFIG = {
+    studentGroups: { containerId: 'student-groups-list', errorFieldId: 'student-groups' },
+    rooms:         { containerId: 'rooms-list',           errorFieldId: 'rooms' },
+    subjects:      { containerId: 'subjects-list',        errorFieldId: 'subjects' },
+};
+
 /**
  * Initialize the Setup page (formerly Data Entry)
  * Shows first-time setup or editing mode based on whether data exists
@@ -486,24 +492,14 @@ function validateSingleEntityName(entityType, name, excludeId) {
  * Get container element for an entity type
  */
 function getContainerForType(entityType) {
-    const containerIds = {
-        'studentGroups': 'student-groups-list',
-        'rooms': 'rooms-list',
-        'subjects': 'subjects-list'
-    };
-    return $(`#${containerIds[entityType]}`);
+    return $(`#${ENTITY_CONFIG[entityType].containerId}`);
 }
 
 /**
  * Get error field ID for an entity type
  */
 function getErrorFieldId(entityType) {
-    const fieldIds = {
-        'studentGroups': 'student-groups',
-        'rooms': 'rooms',
-        'subjects': 'subjects'
-    };
-    return fieldIds[entityType];
+    return ENTITY_CONFIG[entityType].errorFieldId;
 }
 
 /**
