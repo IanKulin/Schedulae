@@ -21,6 +21,7 @@ const MainViewState = {
     debouncedSave: null,
     conflictMap: {},
     editingTeacherId: null,
+    editingPeriodId: null,
 
     /**
      * Initialize state (called from initApp)
@@ -29,6 +30,7 @@ const MainViewState = {
         this.debouncedSave = debounce(saveChanges, 500);
         this.conflictMap = {};
         this.editingTeacherId = null;
+        this.editingPeriodId = null;
     },
 
     /**
@@ -38,6 +40,7 @@ const MainViewState = {
         this.debouncedSave = null;
         this.conflictMap = {};
         this.editingTeacherId = null;
+        this.editingPeriodId = null;
     }
 };
 
@@ -207,7 +210,7 @@ function createTeacherHeader(teacherId, teacher, data) {
         headerRow.dataset.teacherId = teacherId;
 
         const nameSpan = document.createElement('span');
-        nameSpan.className = 'teacher-header-name';
+        nameSpan.className = 'teacher-header-name inline-editable-label';
         nameSpan.textContent = teacher.name;
         headerRow.appendChild(nameSpan);
 
@@ -431,7 +434,15 @@ function renderMainViewGrid(data) {
             const rowHeader = document.createElement('div');
             rowHeader.className = 'grid-cell grid-row-header';
             rowHeader.dataset.day = day;
-            rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - P${period}</span>`;
+
+            const isEditingThisPeriod = MainViewState.editingPeriodId === period.id;
+            if (isEditingThisPeriod && day === DAYS[0]) {
+                // Edit mode — only show input in first (Monday) row
+                rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - <input type="text" class="period-edit-input" value="${escapeHtml(period.name)}" data-period-id="${period.id}"></span>`;
+            } else {
+                // Normal mode (or edit mode for non-Monday rows — show read-only)
+                rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period period-label-editable inline-editable-label" data-period-id="${period.id}"> - ${escapeHtml(period.name)}</span>`;
+            }
             grid.appendChild(rowHeader);
 
             // Data cells for each teacher
@@ -439,11 +450,11 @@ function renderMainViewGrid(data) {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell grid-data-cell';
                 cell.dataset.day = day;
-                cell.dataset.period = period;
+                cell.dataset.period = period.id;
                 cell.dataset.teacherId = teacherId;
 
                 // Find the slot for this cell
-                const slot = getSlotForCell(data, day, period, teacherId);
+                const slot = getSlotForCell(data, day, period.id, teacherId);
                 if (slot) {
                     // Check for conflicts on this slot
                     const conflicts = MainViewState.conflictMap[slot.id] || [];
@@ -467,6 +478,14 @@ function renderMainViewGrid(data) {
         if (editInput) {
             editInput.focus();
             editInput.select();
+        }
+    }
+
+    if (MainViewState.editingPeriodId) {
+        const periodInput = grid.querySelector('.period-edit-input');
+        if (periodInput) {
+            periodInput.focus();
+            periodInput.select();
         }
     }
 }
@@ -731,6 +750,40 @@ function updateConflictHighlighting(data) {
 }
 
 /**
+ * Enter period label edit mode
+ * @param {number} periodId - Integer period ID
+ */
+function enterPeriodEditMode(periodId) {
+    MainViewState.editingPeriodId = periodId;
+    renderMainViewGrid(loadData());
+}
+
+/**
+ * Save the current period name edit
+ */
+function savePeriodEdit() {
+    const periodId = MainViewState.editingPeriodId;
+    if (!periodId) return;
+    const input = document.querySelector('.period-edit-input');
+    if (!input) return;
+    const newName = input.value.trim();
+    const data = loadData();
+    const result = renamePeriod(data, periodId, newName);
+    if (!result.success) { alert(result.error); input.focus(); return; }
+    saveData(data);
+    MainViewState.editingPeriodId = null;
+    renderMainViewGrid(data);
+}
+
+/**
+ * Cancel the current period name edit
+ */
+function cancelPeriodEdit() {
+    MainViewState.editingPeriodId = null;
+    renderMainViewGrid(loadData());
+}
+
+/**
  * Set up event listeners for Timetable Builder (formerly Main View)
  */
 function setupMainViewEventListeners() {
@@ -748,15 +801,24 @@ function setupMainViewEventListeners() {
     if (grid) {
         grid.addEventListener('change', handleDropdownChange);
 
-        // Keydown on edit input: Enter saves, Escape cancels
+        // Keydown on edit inputs: Enter saves, Escape cancels
         grid.addEventListener('keydown', (e) => {
-            if (!e.target.classList.contains('teacher-edit-input')) return;
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                saveTeacherEdit();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                cancelTeacherEdit();
+            if (e.target.classList.contains('teacher-edit-input')) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveTeacherEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelTeacherEdit();
+                }
+            } else if (e.target.classList.contains('period-edit-input')) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    savePeriodEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelPeriodEdit();
+                }
             }
         });
 
@@ -796,6 +858,12 @@ function setupMainViewEventListeners() {
                 const panel = document.getElementById(`defaults-panel-${teacherId}`);
                 if (panel && panel.classList.contains('expanded')) return;
                 enterTeacherEditMode(teacherId);
+            }
+
+            // Single-click on period label to enter edit mode
+            const periodLabel = e.target.closest('.period-label-editable');
+            if (periodLabel) {
+                enterPeriodEditMode(parseInt(periodLabel.dataset.periodId, 10));
             }
         });
 

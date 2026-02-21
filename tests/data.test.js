@@ -25,7 +25,9 @@ const {
     countSlotsReferencingEntity,
     updateEntityName,
     addPeriodsToTimetable,
-    removePeriodsFromTimetable
+    removePeriodsFromTimetable,
+    validatePeriodName,
+    renamePeriod
 } = require('../public/js/data.js');
 
 describe('DAYS constant', () => {
@@ -38,7 +40,14 @@ describe('createEmptyTimetableData', () => {
     it('should create structure with default 6 periods', () => {
         const data = createEmptyTimetableData();
 
-        assert.deepStrictEqual(data.periods, [1, 2, 3, 4, 5, 6]);
+        assert.deepStrictEqual(data.periods, [
+            { id: 1, name: 'P1' },
+            { id: 2, name: 'P2' },
+            { id: 3, name: 'P3' },
+            { id: 4, name: 'P4' },
+            { id: 5, name: 'P5' },
+            { id: 6, name: 'P6' }
+        ]);
         assert.deepStrictEqual(data.teachers, {});
         assert.deepStrictEqual(data.rooms, {});
         assert.deepStrictEqual(data.studentGroups, {});
@@ -49,7 +58,12 @@ describe('createEmptyTimetableData', () => {
     it('should create structure with custom period count', () => {
         const data = createEmptyTimetableData(4);
 
-        assert.deepStrictEqual(data.periods, [1, 2, 3, 4]);
+        assert.deepStrictEqual(data.periods, [
+            { id: 1, name: 'P1' },
+            { id: 2, name: 'P2' },
+            { id: 3, name: 'P3' },
+            { id: 4, name: 'P4' }
+        ]);
     });
 });
 
@@ -438,7 +452,14 @@ describe('orphanSlotReferences', () => {
 
 describe('validateTimetableData', () => {
     const validData = {
-        periods: [1, 2, 3, 4, 5, 6],
+        periods: [
+            { id: 1, name: 'P1' },
+            { id: 2, name: 'P2' },
+            { id: 3, name: 'P3' },
+            { id: 4, name: 'P4' },
+            { id: 5, name: 'P5' },
+            { id: 6, name: 'P6' }
+        ],
         teachers: { '1': { id: '1', name: 'Ms Smith' } },
         studentGroups: { '1': { id: '1', name: '9A' } },
         rooms: { '1': { id: '1', name: 'Room 12' } },
@@ -478,12 +499,14 @@ describe('validateTimetableData', () => {
         assert.strictEqual(validateTimetableData({ ...validData, periods: 'not array' }), false);
         // Empty array
         assert.strictEqual(validateTimetableData({ ...validData, periods: [] }), false);
-        // Non-integer values
-        assert.strictEqual(validateTimetableData({ ...validData, periods: [1.5, 2] }), false);
-        // Negative values
-        assert.strictEqual(validateTimetableData({ ...validData, periods: [-1, 2] }), false);
-        // Zero
-        assert.strictEqual(validateTimetableData({ ...validData, periods: [0, 1] }), false);
+        // Plain integers (old format) are no longer valid
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [1, 2, 3] }), false);
+        // Object with non-integer id
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [{ id: 1.5, name: 'P1' }] }), false);
+        // Object with negative id
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [{ id: -1, name: 'P1' }] }), false);
+        // Object missing name
+        assert.strictEqual(validateTimetableData({ ...validData, periods: [{ id: 1 }] }), false);
     });
 
     it('should return false for invalid entity objects', () => {
@@ -541,7 +564,7 @@ describe('validateTimetableData', () => {
 
     it('should allow empty entities and slots', () => {
         const emptyEntities = {
-            periods: [1, 2, 3],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
             teachers: {},
             studentGroups: {},
             rooms: {},
@@ -606,20 +629,26 @@ describe('countSlotsForPeriods', () => {
 });
 
 describe('addPeriodsToTimetable', () => {
-    it('should add new period numbers to the periods array', () => {
+    it('should add new period objects to the periods array', () => {
         const data = {
-            periods: [1, 2, 3],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
             teachers: {},
             slots: []
         };
         addPeriodsToTimetable(data, 5);
 
-        assert.deepStrictEqual(data.periods, [1, 2, 3, 4, 5]);
+        assert.deepStrictEqual(data.periods, [
+            { id: 1, name: 'P1' },
+            { id: 2, name: 'P2' },
+            { id: 3, name: 'P3' },
+            { id: 4, name: 'P4' },
+            { id: 5, name: 'P5' }
+        ]);
     });
 
     it('should create slots for new periods for all teachers', () => {
         const data = {
-            periods: [1, 2],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }],
             teachers: { '1': { id: '1', name: 'Alice' }, '2': { id: '2', name: 'Bob' } },
             slots: []
         };
@@ -634,7 +663,7 @@ describe('addPeriodsToTimetable', () => {
 
     it('should not create duplicate slots if called multiple times', () => {
         const data = {
-            periods: [1],
+            periods: [{ id: 1, name: 'P1' }],
             teachers: { '1': { id: '1', name: 'Alice' } },
             slots: []
         };
@@ -642,24 +671,29 @@ describe('addPeriodsToTimetable', () => {
 
         // 1 teacher * 5 days * 1 new period = 5 new slots
         assert.strictEqual(data.slots.length, 5);
-        assert.deepStrictEqual(data.periods, [1, 2]);
+        assert.deepStrictEqual(data.periods, [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }]);
     });
 
     it('should handle no teachers gracefully', () => {
         const data = {
-            periods: [1, 2],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }],
             teachers: {},
             slots: []
         };
         addPeriodsToTimetable(data, 4);
 
-        assert.deepStrictEqual(data.periods, [1, 2, 3, 4]);
+        assert.deepStrictEqual(data.periods, [
+            { id: 1, name: 'P1' },
+            { id: 2, name: 'P2' },
+            { id: 3, name: 'P3' },
+            { id: 4, name: 'P4' }
+        ]);
         assert.strictEqual(data.slots.length, 0);
     });
 
     it('should create slots with correct structure', () => {
         const data = {
-            periods: [1],
+            periods: [{ id: 1, name: 'P1' }],
             teachers: { '1': { id: '1', name: 'Alice' } },
             slots: []
         };
@@ -676,19 +710,24 @@ describe('addPeriodsToTimetable', () => {
 });
 
 describe('removePeriodsFromTimetable', () => {
-    it('should remove period numbers from the periods array', () => {
+    it('should remove period objects from the periods array', () => {
         const data = {
-            periods: [1, 2, 3, 4, 5],
+            periods: [
+                { id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' },
+                { id: 4, name: 'P4' }, { id: 5, name: 'P5' }
+            ],
             slots: []
         };
         removePeriodsFromTimetable(data, 3);
 
-        assert.deepStrictEqual(data.periods, [1, 2, 3]);
+        assert.deepStrictEqual(data.periods, [
+            { id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }
+        ]);
     });
 
     it('should delete slots for removed periods', () => {
         const data = {
-            periods: [1, 2, 3, 4],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }, { id: 4, name: 'P4' }],
             slots: [
                 { id: '1', period: 1, day: 'Monday', teacherId: '1' },
                 { id: '2', period: 2, day: 'Monday', teacherId: '1' },
@@ -704,7 +743,7 @@ describe('removePeriodsFromTimetable', () => {
 
     it('should preserve slot data for remaining periods', () => {
         const data = {
-            periods: [1, 2, 3],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
             slots: [
                 { id: '1', period: 1, studentGroupId: 'sg1', roomId: 'r1', subjectId: 's1' },
                 { id: '2', period: 2, studentGroupId: 'sg2', roomId: 'r2', subjectId: 's2' },
@@ -727,7 +766,7 @@ describe('removePeriodsFromTimetable', () => {
 
     it('should handle reducing to 1 period', () => {
         const data = {
-            periods: [1, 2, 3],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }, { id: 3, name: 'P3' }],
             slots: [
                 { id: '1', period: 1 },
                 { id: '2', period: 2 },
@@ -736,7 +775,7 @@ describe('removePeriodsFromTimetable', () => {
         };
         removePeriodsFromTimetable(data, 1);
 
-        assert.deepStrictEqual(data.periods, [1]);
+        assert.deepStrictEqual(data.periods, [{ id: 1, name: 'P1' }]);
         assert.strictEqual(data.slots.length, 1);
     });
 });
@@ -744,7 +783,7 @@ describe('removePeriodsFromTimetable', () => {
 describe('period changes preserve unaffected data', () => {
     it('should preserve existing slots when adding periods', () => {
         const data = {
-            periods: [1, 2],
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }],
             teachers: { '1': { id: '1', name: 'Alice' } },
             slots: [
                 { id: 'existing1', period: 1, day: 'Monday', teacherId: '1', studentGroupId: 'sg1', roomId: 'r1', subjectId: 's1' },
@@ -814,6 +853,53 @@ describe('countSlotsReferencingEntity', () => {
 
     it('should return 0 for empty slots array', () => {
         assert.strictEqual(countSlotsReferencingEntity('studentGroups', '1', []), 0);
+    });
+});
+
+describe('validatePeriodName', () => {
+    it('should return null for valid non-blank name', () => {
+        assert.strictEqual(validatePeriodName('Lunch'), null);
+        assert.strictEqual(validatePeriodName('P1'), null);
+        assert.strictEqual(validatePeriodName('  Assembly  '), null);
+    });
+
+    it('should return error for blank name', () => {
+        assert.ok(validatePeriodName('') !== null);
+        assert.ok(validatePeriodName('   ') !== null);
+        assert.ok(validatePeriodName(null) !== null);
+    });
+});
+
+describe('renamePeriod', () => {
+    it('should rename a period by id', () => {
+        const data = {
+            periods: [{ id: 1, name: 'P1' }, { id: 2, name: 'P2' }]
+        };
+        const result = renamePeriod(data, 1, 'Lunch');
+        assert.strictEqual(result.success, true);
+        assert.strictEqual(data.periods[0].name, 'Lunch');
+        assert.strictEqual(data.periods[1].name, 'P2');
+    });
+
+    it('should trim the name before saving', () => {
+        const data = { periods: [{ id: 1, name: 'P1' }] };
+        renamePeriod(data, 1, '  Break  ');
+        assert.strictEqual(data.periods[0].name, 'Break');
+    });
+
+    it('should return error for blank name', () => {
+        const data = { periods: [{ id: 1, name: 'P1' }] };
+        const result = renamePeriod(data, 1, '');
+        assert.strictEqual(result.success, false);
+        assert.ok(result.error);
+        assert.strictEqual(data.periods[0].name, 'P1');
+    });
+
+    it('should return error for unknown period id', () => {
+        const data = { periods: [{ id: 1, name: 'P1' }] };
+        const result = renamePeriod(data, 99, 'Lunch');
+        assert.strictEqual(result.success, false);
+        assert.ok(result.error);
     });
 });
 

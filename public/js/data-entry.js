@@ -598,7 +598,7 @@ function handleSaveTeachers() {
     // Create slots for new teachers
     const newTeacherIds = Object.keys(teacherSync.entities).filter(id => !data.teachers[id]);
     for (const teacherId of newTeacherIds) {
-        const newSlots = createSlotsForTeacher(teacherId, data.periods);
+        const newSlots = createSlotsForTeacher(teacherId, data.periods.map(p => p.id));
         data.slots.push(...newSlots);
     }
 
@@ -675,13 +675,12 @@ function handlePeriodChange(data, newCount) {
     } else if (newCount < currentCount) {
         const affectedSlots = countSlotsForPeriods(data, newCount);
         const periodsToRemove = currentCount - newCount;
-        const periodNumbers = [];
-        for (let p = newCount + 1; p <= currentCount; p++) {
-            periodNumbers.push(p);
-        }
-        const periodList = periodNumbers.join(', ');
+        const removedNames = data.periods
+            .filter(p => p.id > newCount)
+            .map(p => p.name)
+            .join(', ');
 
-        const message = `Reducing periods from ${currentCount} to ${newCount} will permanently delete all data for period${periodsToRemove > 1 ? 's' : ''} ${periodList}. This will affect ${affectedSlots} slot${affectedSlots !== 1 ? 's' : ''}. Are you sure?`;
+        const message = `Reducing periods from ${currentCount} to ${newCount} will permanently delete all data for: ${removedNames}. This will affect ${affectedSlots} slot${affectedSlots !== 1 ? 's' : ''}. Are you sure?`;
 
         if (!confirm(message)) {
             return false;

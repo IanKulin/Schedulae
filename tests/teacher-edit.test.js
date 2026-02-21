@@ -22,7 +22,7 @@ function createTestData() {
         '2': { id: '2', name: 'Bob' },
         '3': { id: '3', name: 'Charlie' }
     };
-    data.slots = createAllSlots(data.teachers, data.periods);
+    data.slots = createAllSlots(data.teachers, data.periods.map(p => p.id));
 
     // Set some slot data to verify preservation
     const slot = data.slots.find(s => s.teacherId === '2' && s.day === 'Monday' && s.period === 1);

@@ -27,8 +27,9 @@ function createTestData(teachers, options = {}) {
 
     // Create slots for all teachers
     data.slots = [];
+    const periodIds = data.periods.map(p => p.id);
     for (const teacherId of Object.keys(data.teachers)) {
-        const slots = createSlotsForTeacher(teacherId, data.periods);
+        const slots = createSlotsForTeacher(teacherId, periodIds);
         data.slots.push(...slots);
     }
 

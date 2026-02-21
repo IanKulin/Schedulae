@@ -14,7 +14,7 @@ const STORAGE_KEY = "timetableData";
 function createEmptyTimetableData(periodCount = 6) {
     const periods = [];
     for (let i = 1; i <= periodCount; i++) {
-        periods.push(i);
+        periods.push({ id: i, name: 'P' + i });
     }
 
     return {
@@ -428,7 +428,7 @@ function validateTimetableData(data) {
     if (!Array.isArray(data.periods) || data.periods.length === 0) {
         return false;
     }
-    if (!data.periods.every(p => Number.isInteger(p) && p > 0)) {
+    if (!data.periods.every(p => p && typeof p === 'object' && Number.isInteger(p.id) && p.id > 0 && typeof p.name === 'string')) {
         return false;
     }
 
@@ -587,7 +587,7 @@ function detectConflicts(data) {
 
     for (const day of DAYS) {
         for (const period of data.periods) {
-            const slotsAtTime = getSlotsForDayPeriod(data.slots, day, period);
+            const slotsAtTime = getSlotsForDayPeriod(data.slots, day, period.id);
 
             // Check student group conflicts
             detectEntityConflicts(
@@ -677,9 +677,9 @@ function updateEntityName(entities, entityId, newName) {
 function addPeriodsToTimetable(data, newPeriodCount) {
     const currentMax = data.periods.length;
 
-    // Add new period numbers to the array
+    // Add new period objects to the array
     for (let p = currentMax + 1; p <= newPeriodCount; p++) {
-        data.periods.push(p);
+        data.periods.push({ id: p, name: 'P' + p });
     }
 
     // Create slots for new periods
@@ -809,10 +809,38 @@ function addTeacherAfter(data, afterTeacherId, newName) {
     }
 
     // Create slots for the new teacher
-    const newSlots = createSlotsForTeacher(newTeacherId, data.periods);
+    const newSlots = createSlotsForTeacher(newTeacherId, data.periods.map(p => p.id));
     data.slots.push(...newSlots);
 
     return { success: true, newTeacherId };
+}
+
+/**
+ * Validate a period name for rename operations
+ * @param {string} name - Name to validate
+ * @returns {string|null} Error message or null if valid
+ */
+function validatePeriodName(name) {
+    const trimmed = (name || '').trim();
+    if (trimmed.length === 0) return 'Name cannot be blank';
+    return null;
+}
+
+/**
+ * Rename a period in-place on the data object
+ * @param {Object} data - TimetableData object
+ * @param {number} periodId - Integer ID of the period to rename
+ * @param {string} newName - New name (will be trimmed)
+ * @returns {Object} { success: boolean, error?: string }
+ */
+function renamePeriod(data, periodId, newName) {
+    const trimmed = newName.trim();
+    const error = validatePeriodName(trimmed);
+    if (error) return { success: false, error };
+    const period = data.periods.find(p => p.id === periodId);
+    if (!period) return { success: false, error: 'Period not found' };
+    period.name = trimmed;
+    return { success: true };
 }
 
 // Export for Node.js testing (ignored in browser)
@@ -849,6 +877,8 @@ if (typeof module !== 'undefined' && module.exports) {
         validateTeacherName,
         renameTeacher,
         deleteTeacher,
-        addTeacherAfter
+        addTeacherAfter,
+        validatePeriodName,
+        renamePeriod
     };
 }

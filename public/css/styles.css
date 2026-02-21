@@ -946,15 +946,17 @@ a:hover {
     padding: 10px var(--spacing-xs);
 }
 
-/* Inline Teacher Editing */
-.teacher-header-editable {
+/* Shared inline label editing hint */
+.inline-editable-label {
     cursor: text;
 }
 
-.teacher-header-editable:hover .teacher-header-name {
+.inline-editable-label:hover {
     background-color: var(--color-bg-corner);
     border-radius: var(--radius-xs);
 }
+
+/* Inline Teacher Editing */
 
 .teacher-header-row--editing {
     display: flex;
@@ -999,6 +1001,17 @@ a:hover {
 .teacher-edit-add:hover {
     color: var(--color-primary);
     background-color: #e8f4fd;
+}
+
+/* Inline Period Label Editing */
+.period-edit-input {
+    width: 5em;
+    padding: 1px 3px;
+    font-size: inherit;
+    font-family: inherit;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-page);
 }
 
 /* ==========================================================================

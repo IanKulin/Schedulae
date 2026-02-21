@@ -229,7 +229,7 @@ function renderIndividualGrid(grid, data, slotMap, config) {
         // Period row header
         const rowHeader = document.createElement('div');
         rowHeader.className = 'grid-cell grid-row-header individual-grid-row-header';
-        rowHeader.textContent = `P${period}`;
+        rowHeader.textContent = period.name;
         grid.appendChild(rowHeader);
 
         // Cells for each day
@@ -237,9 +237,9 @@ function renderIndividualGrid(grid, data, slotMap, config) {
             const cell = document.createElement('div');
             cell.className = 'grid-cell individual-grid-cell';
             cell.dataset.day = day;
-            cell.dataset.period = period;
+            cell.dataset.period = period.id;
 
-            const slot = slotMap[day] && slotMap[day][period];
+            const slot = slotMap[day] && slotMap[day][period.id];
             if (slot) {
                 cell.appendChild(createIndividualCellContent(slot, data, config));
             }
