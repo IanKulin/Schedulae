@@ -13,6 +13,10 @@ const DAY_ABBREVIATIONS = {
     "Friday": "Fri"
 };
 
+// HTML-injection policy:
+// - Use .textContent when inserting plain text into a single element.
+// - Use .innerHTML only when markup structure is needed; every piece of
+//   user-supplied data in the template must be wrapped in escapeHtml().
 /**
  * Escape HTML special characters to prevent XSS
  * @param {string} str - String to escape
@@ -65,10 +69,14 @@ function $$(selector) {
  */
 function debounce(fn, delay) {
     let timeoutId;
-    return function (...args) {
+    function debounced(...args) {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => fn.apply(this, args), delay);
+    }
+    debounced.cancel = function () {
+        clearTimeout(timeoutId);
     };
+    return debounced;
 }
 
 /**

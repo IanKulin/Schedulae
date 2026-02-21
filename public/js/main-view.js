@@ -43,6 +43,7 @@ const MainViewState = {
      * Reset state (useful for testing)
      */
     reset() {
+        if (this.debouncedSave) this.debouncedSave.cancel();
         this.debouncedSave = null;
         this.conflictMap = {};
         this.editingTeacherId = null;
