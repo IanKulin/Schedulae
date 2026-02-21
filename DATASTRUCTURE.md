@@ -114,6 +114,17 @@ Entity IDs are auto-generated incrementing integers (stored as strings). Each en
 }
 ```
 
+### Period
+
+```json
+{
+  "id": 1,
+  "name": "P1"
+}
+```
+
+Periods are stored as objects (not plain numbers) to allow for custom display names. The `id` is an integer starting at 1; `name` defaults to `"P{id}"` but can be customised.
+
 ---
 
 ## Timetable Structure
@@ -124,7 +135,10 @@ Days are hardcoded as Monday through Friday. The number of periods is set once d
 
 ```json
 {
-  "periods": [1, 2, 3, 4, 5, 6],
+  "periods": [
+    { "id": 1, "name": "P1" },
+    { "id": 2, "name": "P2" }
+  ],
 
   "teachers": { },
   "rooms": { },
