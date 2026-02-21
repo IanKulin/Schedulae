@@ -719,6 +719,102 @@ function removePeriodsFromTimetable(data, newPeriodCount) {
     return data;
 }
 
+/**
+ * Validate a teacher name for rename/add operations
+ * @param {string} name - Name to validate
+ * @returns {string|null} Error message or null if valid
+ */
+function validateTeacherName(name) {
+    const trimmed = (name || '').trim();
+    if (trimmed.length === 0) {
+        return 'Name cannot be blank';
+    }
+    return null;
+}
+
+/**
+ * Rename a teacher in-place on the data object
+ * @param {Object} data - TimetableData object
+ * @param {string} teacherId - ID of teacher to rename
+ * @param {string} newName - New name (will be trimmed)
+ * @returns {Object} { success: boolean, error?: string }
+ */
+function renameTeacher(data, teacherId, newName) {
+    const trimmed = newName.trim();
+    const error = validateTeacherName(trimmed);
+    if (error) {
+        return { success: false, error };
+    }
+    data.teachers[teacherId].name = trimmed;
+    return { success: true };
+}
+
+/**
+ * Delete a teacher and all their slots from the data object
+ * @param {Object} data - TimetableData object
+ * @param {string} teacherId - ID of teacher to delete
+ */
+function deleteTeacher(data, teacherId) {
+    delete data.teachers[teacherId];
+    data.slots = data.slots.filter(slot => slot.teacherId !== teacherId);
+}
+
+/**
+ * Add a new teacher positioned immediately after the given teacher,
+ * reassigning all teacher IDs to maintain sort order.
+ * @param {Object} data - TimetableData object
+ * @param {string} afterTeacherId - ID of teacher to insert after
+ * @param {string} newName - Name for the new teacher
+ * @returns {Object} { success: boolean, newTeacherId: string }
+ */
+function addTeacherAfter(data, afterTeacherId, newName) {
+    // Get sorted teacher list and find insertion point
+    const sorted = Object.entries(data.teachers)
+        .sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10));
+    const afterIndex = sorted.findIndex(([id]) => id === afterTeacherId);
+    if (afterIndex === -1) {
+        return { success: false, error: 'Teacher not found' };
+    }
+
+    // Splice new teacher into position
+    const placeholder = { name: newName.trim() };
+    sorted.splice(afterIndex + 1, 0, ['__new__', placeholder]);
+
+    // Build old→new ID mapping and rebuild teachers
+    const idMap = {}; // oldId → newId
+    const newTeachers = {};
+    let newTeacherId = null;
+
+    for (let i = 0; i < sorted.length; i++) {
+        const newId = String(i + 1);
+        const [oldId, teacher] = sorted[i];
+
+        if (oldId === '__new__') {
+            newTeacherId = newId;
+        } else {
+            idMap[oldId] = newId;
+        }
+
+        newTeachers[newId] = { id: newId, name: teacher.name };
+    }
+
+    data.teachers = newTeachers;
+
+    // Update existing slots: remap teacherId and regenerate slot IDs
+    for (const slot of data.slots) {
+        if (idMap[slot.teacherId]) {
+            slot.teacherId = idMap[slot.teacherId];
+            slot.id = generateSlotId(slot.day, slot.period, slot.teacherId);
+        }
+    }
+
+    // Create slots for the new teacher
+    const newSlots = createSlotsForTeacher(newTeacherId, data.periods);
+    data.slots.push(...newSlots);
+
+    return { success: true, newTeacherId };
+}
+
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -749,6 +845,10 @@ if (typeof module !== 'undefined' && module.exports) {
         countSlotsReferencingEntity,
         updateEntityName,
         addPeriodsToTimetable,
-        removePeriodsFromTimetable
+        removePeriodsFromTimetable,
+        validateTeacherName,
+        renameTeacher,
+        deleteTeacher,
+        addTeacherAfter
     };
 }

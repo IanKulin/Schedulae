@@ -946,6 +946,61 @@ a:hover {
     padding: 10px var(--spacing-xs);
 }
 
+/* Inline Teacher Editing */
+.teacher-header-editable {
+    cursor: text;
+}
+
+.teacher-header-editable:hover .teacher-header-name {
+    background-color: var(--color-bg-corner);
+    border-radius: var(--radius-xs);
+}
+
+.teacher-header-row--editing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+.teacher-edit-input {
+    flex: 1;
+    min-width: 0;
+    padding: 2px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-xs);
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    text-align: center;
+}
+
+.teacher-edit-trash,
+.teacher-edit-add {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 14px;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    line-height: 1;
+    border-radius: var(--radius-xs);
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.teacher-edit-trash:hover {
+    color: var(--color-error);
+    background-color: #fdeaea;
+}
+
+.teacher-edit-add:hover {
+    color: var(--color-primary);
+    background-color: #e8f4fd;
+}
+
 /* ==========================================================================
    8.5 Setup Page Sections
    ========================================================================== */

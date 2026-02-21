@@ -20,6 +20,7 @@ function saveChanges(data) {
 const MainViewState = {
     debouncedSave: null,
     conflictMap: {},
+    editingTeacherId: null,
 
     /**
      * Initialize state (called from initApp)
@@ -27,6 +28,7 @@ const MainViewState = {
     init() {
         this.debouncedSave = debounce(saveChanges, 500);
         this.conflictMap = {};
+        this.editingTeacherId = null;
     },
 
     /**
@@ -35,6 +37,7 @@ const MainViewState = {
     reset() {
         this.debouncedSave = null;
         this.conflictMap = {};
+        this.editingTeacherId = null;
     }
 };
 
@@ -168,29 +171,60 @@ function createCellContent(data, slot, conflicts) {
  */
 function createTeacherHeader(teacherId, teacher, data) {
     const fragment = document.createDocumentFragment();
+    const isEditing = MainViewState.editingTeacherId === teacherId;
 
-    // Header row with name and toggle
-    const headerRow = document.createElement('div');
-    headerRow.className = 'teacher-header-row';
+    if (isEditing) {
+        // Edit mode: [trash] [input] [add]
+        const headerRow = document.createElement('div');
+        headerRow.className = 'teacher-header-row teacher-header-row--editing';
+        headerRow.dataset.teacherId = teacherId;
 
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'teacher-header-name';
-    nameSpan.textContent = teacher.name;
-    headerRow.appendChild(nameSpan);
+        const trashBtn = document.createElement('button');
+        trashBtn.type = 'button';
+        trashBtn.className = 'teacher-edit-trash';
+        trashBtn.innerHTML = '&#128465;';
+        trashBtn.title = 'Delete teacher';
+        headerRow.appendChild(trashBtn);
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.type = 'button';
-    toggleBtn.className = 'defaults-toggle';
-    toggleBtn.dataset.teacherId = teacherId;
-    toggleBtn.innerHTML = '&#9660;'; // Down arrow
-    toggleBtn.title = 'Toggle defaults panel';
-    headerRow.appendChild(toggleBtn);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'teacher-edit-input';
+        input.value = teacher.name;
+        headerRow.appendChild(input);
 
-    fragment.appendChild(headerRow);
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'teacher-edit-add';
+        addBtn.textContent = '+';
+        addBtn.title = 'Add teacher after';
+        headerRow.appendChild(addBtn);
 
-    // Defaults panel (collapsed by default)
-    const panel = createDefaultsPanel(teacherId, data);
-    fragment.appendChild(panel);
+        fragment.appendChild(headerRow);
+    } else {
+        // Display mode: name + toggle
+        const headerRow = document.createElement('div');
+        headerRow.className = 'teacher-header-row teacher-header-editable';
+        headerRow.dataset.teacherId = teacherId;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'teacher-header-name';
+        nameSpan.textContent = teacher.name;
+        headerRow.appendChild(nameSpan);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'defaults-toggle';
+        toggleBtn.dataset.teacherId = teacherId;
+        toggleBtn.innerHTML = '&#9660;';
+        toggleBtn.title = 'Toggle defaults panel';
+        headerRow.appendChild(toggleBtn);
+
+        fragment.appendChild(headerRow);
+
+        // Defaults panel (collapsed by default)
+        const panel = createDefaultsPanel(teacherId, data);
+        fragment.appendChild(panel);
+    }
 
     return fragment;
 }
@@ -426,6 +460,110 @@ function renderMainViewGrid(data) {
             }
         }
     }
+
+    // Focus the edit input if in edit mode
+    if (MainViewState.editingTeacherId) {
+        const editInput = grid.querySelector('.teacher-edit-input');
+        if (editInput) {
+            editInput.focus();
+            editInput.select();
+        }
+    }
+}
+
+/**
+ * Enter teacher edit mode
+ * @param {string} teacherId - Teacher ID to edit
+ */
+function enterTeacherEditMode(teacherId) {
+    // Don't enter edit mode if accordion is expanded
+    const panel = document.getElementById(`defaults-panel-${teacherId}`);
+    if (panel && panel.classList.contains('expanded')) return;
+
+    MainViewState.editingTeacherId = teacherId;
+    renderMainViewGrid(loadData());
+}
+
+/**
+ * Save the current teacher edit (rename)
+ */
+function saveTeacherEdit() {
+    const teacherId = MainViewState.editingTeacherId;
+    if (!teacherId) return;
+
+    const input = document.querySelector('.teacher-edit-input');
+    if (!input) return;
+
+    const newName = input.value.trim();
+    const data = loadData();
+
+    const error = validateTeacherName(newName);
+    if (error) {
+        alert(error);
+        input.focus();
+        return;
+    }
+
+    renameTeacher(data, teacherId, newName);
+    saveData(data);
+    MainViewState.editingTeacherId = null;
+    renderMainViewGrid(data);
+}
+
+/**
+ * Cancel the current teacher edit
+ */
+function cancelTeacherEdit() {
+    MainViewState.editingTeacherId = null;
+    renderMainViewGrid(loadData());
+}
+
+/**
+ * Handle teacher deletion from edit mode
+ * @param {string} teacherId - Teacher ID to delete
+ */
+function handleTeacherDelete(teacherId) {
+    const data = loadData();
+    const teacher = data.teachers[teacherId];
+    const name = teacher ? teacher.name : 'this teacher';
+
+    if (!confirm(`Delete teacher ${name}? This will also remove all associated data in this row. This cannot be undone.`)) {
+        return; // Stay in edit mode
+    }
+
+    deleteTeacher(data, teacherId);
+    saveData(data);
+    MainViewState.editingTeacherId = null;
+
+    // Re-render or show empty state
+    initMainViewPage();
+}
+
+/**
+ * Handle adding a new teacher after the current one
+ * @param {string} afterTeacherId - Teacher ID to insert after
+ */
+function handleTeacherAdd(afterTeacherId) {
+    // If currently editing, try to save first
+    if (MainViewState.editingTeacherId) {
+        const input = document.querySelector('.teacher-edit-input');
+        if (input) {
+            const newName = input.value.trim();
+            const data = loadData();
+            const error = validateTeacherName(newName);
+            if (!error) {
+                renameTeacher(data, MainViewState.editingTeacherId, newName);
+                saveData(data);
+            }
+        }
+    }
+
+    const data = loadData();
+    const result = addTeacherAfter(data, afterTeacherId, 'New Teacher');
+    if (!result.success) return;
+    saveData(data);
+    MainViewState.editingTeacherId = result.newTeacherId;
+    renderMainViewGrid(data);
 }
 
 /**
@@ -610,7 +748,19 @@ function setupMainViewEventListeners() {
     if (grid) {
         grid.addEventListener('change', handleDropdownChange);
 
-        // Event delegation for defaults panel toggle buttons
+        // Keydown on edit input: Enter saves, Escape cancels
+        grid.addEventListener('keydown', (e) => {
+            if (!e.target.classList.contains('teacher-edit-input')) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveTeacherEdit();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelTeacherEdit();
+            }
+        });
+
+        // Event delegation for defaults panel toggle buttons and teacher edit buttons
         grid.addEventListener('click', (e) => {
             const toggleBtn = e.target.closest('.defaults-toggle');
             if (toggleBtn) {
@@ -622,6 +772,30 @@ function setupMainViewEventListeners() {
             if (applyBtn) {
                 const teacherId = applyBtn.dataset.teacherId;
                 applyTeacherDefaults(teacherId);
+            }
+
+            // Teacher edit: trash button
+            const trashBtn = e.target.closest('.teacher-edit-trash');
+            if (trashBtn) {
+                const teacherId = MainViewState.editingTeacherId;
+                if (teacherId) handleTeacherDelete(teacherId);
+            }
+
+            // Teacher edit: add button
+            const addBtn = e.target.closest('.teacher-edit-add');
+            if (addBtn) {
+                const teacherId = MainViewState.editingTeacherId;
+                if (teacherId) handleTeacherAdd(teacherId);
+            }
+
+            // Single-click on teacher name to enter edit mode
+            const editableHeader = e.target.closest('.teacher-header-editable');
+            if (editableHeader && !e.target.closest('.defaults-toggle')) {
+                const teacherId = editableHeader.dataset.teacherId;
+                if (!teacherId) return;
+                const panel = document.getElementById(`defaults-panel-${teacherId}`);
+                if (panel && panel.classList.contains('expanded')) return;
+                enterTeacherEditMode(teacherId);
             }
         });
 
