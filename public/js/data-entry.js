@@ -393,7 +393,7 @@ function saveAdd(entityType) {
     showFieldError(getErrorFieldId(entityType), '');
 
     // Generate new ID and add entity
-    const newId = generateNewEntityId(entityType);
+    const newId = generateEntityId(entityType, { [entityType]: entityState[entityType].entities });
     entityState[entityType].entities[newId] = { id: newId, name: newName };
 
     // Save immediately to LocalStorage
@@ -480,21 +480,6 @@ function validateSingleEntityName(entityType, name, excludeId) {
     }
 
     return null;
-}
-
-/**
- * Generate a new entity ID for an entity type
- */
-function generateNewEntityId(entityType) {
-    const entities = entityState[entityType].entities;
-    const existingIds = Object.keys(entities).map(id => parseInt(id, 10));
-
-    if (existingIds.length === 0) {
-        return "1";
-    }
-
-    const maxId = Math.max(...existingIds);
-    return String(maxId + 1);
 }
 
 /**
