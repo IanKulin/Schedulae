@@ -505,8 +505,10 @@ function enterTeacherEditMode(teacherId) {
     const panel = document.getElementById(`defaults-panel-${teacherId}`);
     if (panel && panel.classList.contains('expanded')) return;
 
+    const data = loadData();
+    if (!data) return;
     MainViewState.editingTeacherId = teacherId;
-    renderMainViewGrid(loadData());
+    renderMainViewGrid(data);
 }
 
 /**
@@ -521,6 +523,7 @@ function saveTeacherEdit() {
 
     const newName = input.value.trim();
     const data = loadData();
+    if (!data) return;
 
     const error = validateTeacherName(newName);
     if (error) {
@@ -539,8 +542,10 @@ function saveTeacherEdit() {
  * Cancel the current teacher edit
  */
 function cancelTeacherEdit() {
+    const data = loadData();
+    if (!data) return;
     MainViewState.editingTeacherId = null;
-    renderMainViewGrid(loadData());
+    renderMainViewGrid(data);
 }
 
 /**
@@ -762,8 +767,10 @@ function updateConflictHighlighting(data) {
  * @param {number} periodId - Integer period ID
  */
 function enterPeriodEditMode(periodId) {
+    const data = loadData();
+    if (!data) return;
     MainViewState.editingPeriodId = periodId;
-    renderMainViewGrid(loadData());
+    renderMainViewGrid(data);
 }
 
 /**
@@ -776,6 +783,7 @@ function savePeriodEdit() {
     if (!input) return;
     const newName = input.value.trim();
     const data = loadData();
+    if (!data) return;
     const result = renamePeriod(data, periodId, newName);
     if (!result.success) { alert(result.error); input.focus(); return; }
     saveData(data);
@@ -787,8 +795,10 @@ function savePeriodEdit() {
  * Cancel the current period name edit
  */
 function cancelPeriodEdit() {
+    const data = loadData();
+    if (!data) return;
     MainViewState.editingPeriodId = null;
-    renderMainViewGrid(loadData());
+    renderMainViewGrid(data);
 }
 
 /**
