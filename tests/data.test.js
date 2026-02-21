@@ -282,6 +282,8 @@ describe('validatePeriods', () => {
         assert.strictEqual(validatePeriods(6), null);
         assert.strictEqual(validatePeriods('6'), null);
         assert.strictEqual(validatePeriods(1), null);
+        assert.strictEqual(validatePeriods(13), null);
+        assert.strictEqual(validatePeriods(19), null);
         assert.strictEqual(validatePeriods(20), null);
     });
 

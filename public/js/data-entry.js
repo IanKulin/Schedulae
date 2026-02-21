@@ -621,8 +621,9 @@ function handleSavePeriods() {
     const newCount = parseInt(periodsValue, 10);
 
     // Validate
-    if (isNaN(newCount) || newCount < 1 || newCount > 12) {
-        showFieldError('periods', 'Periods must be between 1 and 12');
+    const periodsError = validatePeriods(periodsValue);
+    if (periodsError) {
+        showFieldError('periods', periodsError);
         return;
     }
 
