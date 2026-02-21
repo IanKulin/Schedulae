@@ -701,6 +701,9 @@ function hideConflictTooltip() {
  * @param {Object} data - TimetableData object
  */
 function updateConflictHighlighting(data) {
+    // Hide any visible tooltip — it may be stale after conflict state changes
+    hideConflictTooltip();
+
     // Re-detect conflicts
     MainViewState.conflictMap = detectConflicts(data);
 
