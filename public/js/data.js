@@ -539,7 +539,7 @@ function detectEntityConflicts(slotsAtTime, entityField, conflictType, entities,
 
     // Find conflicts (entities appearing in multiple slots)
     for (const [entityId, slots] of Object.entries(entityGroups)) {
-        if (slots.length <= 1) continue;
+        if (slots.length <= 1) continue; // Only one booking in this cell — no conflict possible
 
         // This entity is double-booked
         const entity = entities[entityId];
@@ -553,7 +553,7 @@ function detectEntityConflicts(slotsAtTime, entityField, conflictType, entities,
         // Add conflict to each affected slot
         for (let i = 0; i < slots.length; i++) {
             const slot = slots[i];
-            const otherTeachers = involvedTeachers.filter((_, idx) => idx !== i);
+            const otherTeachers = involvedTeachers.filter((_, idx) => idx !== i); // All teachers involved in this conflict except the one on this slot
 
             if (!conflictMap[slot.id]) {
                 conflictMap[slot.id] = [];
