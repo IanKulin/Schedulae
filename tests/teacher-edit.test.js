@@ -5,12 +5,14 @@ const {
     createEmptyTimetableData,
     createSlotsForTeacher,
     createAllSlots,
-    generateSlotId,
+    generateSlotId
+} = require('../public/js/data.js');
+const {
     validateTeacherName,
     renameTeacher,
     deleteTeacher,
     addTeacherAfter
-} = require('../public/js/data.js');
+} = require('../public/js/data-ops.js');
 
 /**
  * Helper: create test data with teachers and slots

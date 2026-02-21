@@ -20,7 +20,9 @@ const {
     syncEntities,
     orphanSlotReferences,
     validateTimetableData,
-    importFromFile,
+    importFromFile
+} = require('../public/js/data.js');
+const {
     countSlotsForPeriods,
     countSlotsReferencingEntity,
     updateEntityName,
@@ -28,7 +30,7 @@ const {
     removePeriodsFromTimetable,
     validatePeriodName,
     renamePeriod
-} = require('../public/js/data.js');
+} = require('../public/js/data-ops.js');
 
 describe('DAYS constant', () => {
     it('should contain weekdays Monday through Friday', () => {
