@@ -33,7 +33,7 @@ const MainViewState = {
      * Initialize state (called from initApp)
      */
     init() {
-        this.debouncedSave = debounce(saveChanges, 500);
+        this.debouncedSave = debounce(saveChanges, AUTOSAVE_DEBOUNCE_MS);
         this.conflictMap = {};
         this.editingTeacherId = null;
         this.editingPeriodId = null;
@@ -397,7 +397,7 @@ function applyTeacherDefaults(teacherId) {
 }
 
 function setupGridColumns(grid, numTeachers) {
-    grid.style.gridTemplateColumns = `180px repeat(${numTeachers}, 200px)`;
+    grid.style.gridTemplateColumns = `${GRID_TIMESLOT_COL_WIDTH} repeat(${numTeachers}, ${GRID_TEACHER_COL_WIDTH})`;
     const corner = document.createElement('div');
     corner.className = 'grid-cell grid-corner';
     corner.textContent = '';
@@ -614,7 +614,7 @@ function handleDropdownChange(event) {
     if (slot) {
         slot[field] = newValue;
 
-        // Use debounced auto-save (500ms delay)
+        // Use debounced auto-save
         MainViewState.debouncedSave(data);
 
         // Update conflict highlighting immediately for responsive feedback

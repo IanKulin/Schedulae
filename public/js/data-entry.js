@@ -527,7 +527,7 @@ function showSaveConfirmation(buttonId) {
         setTimeout(() => {
             btn.textContent = originalText;
             btn.classList.remove('save-success');
-        }, 1500);
+        }, SAVE_CONFIRM_DISPLAY_MS);
     }
 }
 
@@ -774,7 +774,7 @@ function showFileStatus(message, isError) {
                 statusEl.textContent = '';
                 statusEl.className = 'file-status';
             }
-        }, 3000);
+        }, FILE_STATUS_DISPLAY_MS);
     }
 }
 
