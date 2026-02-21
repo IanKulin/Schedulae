@@ -395,6 +395,77 @@ function applyTeacherDefaults(teacherId) {
     // Reset dropdowns to blank (panel is re-rendered, so this happens automatically)
 }
 
+function setupGridColumns(grid, numTeachers) {
+    grid.style.gridTemplateColumns = `180px repeat(${numTeachers}, 200px)`;
+    const corner = document.createElement('div');
+    corner.className = 'grid-cell grid-corner';
+    corner.textContent = '';
+    grid.appendChild(corner);
+}
+
+function renderTeacherHeaders(grid, teachers, data) {
+    for (const [teacherId, teacher] of teachers) {
+        const header = document.createElement('div');
+        header.className = 'grid-cell grid-header has-defaults';
+        header.title = teacher.name;
+        header.appendChild(createTeacherHeader(teacherId, teacher, data));
+        grid.appendChild(header);
+    }
+}
+
+function renderRowHeader(day, period) {
+    const rowHeader = document.createElement('div');
+    rowHeader.className = 'grid-cell grid-row-header';
+    rowHeader.dataset.day = day;
+    const isEditingThisPeriod = MainViewState.editingPeriodId === period.id;
+    if (isEditingThisPeriod && day === DAYS[0]) {
+        rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - <input type="text" class="period-edit-input" value="${escapeHtml(period.name)}" data-period-id="${period.id}"></span>`;
+    } else {
+        rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period period-label-editable inline-editable-label" data-period-id="${period.id}"> - ${escapeHtml(period.name)}</span>`;
+    }
+    return rowHeader;
+}
+
+function renderDataCell(data, day, period, teacherId) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell grid-data-cell';
+    cell.dataset.day = day;
+    cell.dataset.period = period.id;
+    cell.dataset.teacherId = teacherId;
+    const slot = getSlotForCell(data, day, period.id, teacherId);
+    if (slot) {
+        const conflicts = MainViewState.conflictMap[slot.id] || [];
+        if (conflicts.length > 0) {
+            cell.classList.add('cell-conflict');
+            cell.dataset.conflicts = JSON.stringify(conflicts);
+        }
+        cell.appendChild(createCellContent(data, slot, conflicts));
+    }
+    return cell;
+}
+
+function renderDataRows(grid, teachers, periods, data) {
+    for (const day of DAYS) {
+        for (const period of periods) {
+            grid.appendChild(renderRowHeader(day, period));
+            for (const [teacherId] of teachers) {
+                grid.appendChild(renderDataCell(data, day, period, teacherId));
+            }
+        }
+    }
+}
+
+function focusGridEditInput(grid) {
+    if (MainViewState.editingTeacherId) {
+        const editInput = grid.querySelector('.teacher-edit-input');
+        if (editInput) { editInput.focus(); editInput.select(); }
+    }
+    if (MainViewState.editingPeriodId) {
+        const periodInput = grid.querySelector('.period-edit-input');
+        if (periodInput) { periodInput.focus(); periodInput.select(); }
+    }
+}
+
 /**
  * Render the main timetable grid
  * @param {Object} data - TimetableData object
@@ -403,97 +474,14 @@ function renderMainViewGrid(data) {
     const grid = $('#timetable-grid');
     const teachers = getSortedEntities(data.teachers);
     const periods = data.periods;
-    const numTeachers = teachers.length;
 
-    // Detect conflicts
     MainViewState.conflictMap = detectConflicts(data);
-
-    // Clear existing grid content
     grid.innerHTML = '';
 
-    // Set up grid columns: row header (180px) + teachers (200px each)
-    grid.style.gridTemplateColumns = `180px repeat(${numTeachers}, 200px)`;
-
-    // Create corner cell
-    const corner = document.createElement('div');
-    corner.className = 'grid-cell grid-corner';
-    corner.textContent = '';
-    grid.appendChild(corner);
-
-    // Create header row (teacher names with defaults panels)
-    for (const [teacherId, teacher] of teachers) {
-        const header = document.createElement('div');
-        header.className = 'grid-cell grid-header has-defaults';
-        header.title = teacher.name; // Show full name on hover for truncated text
-
-        // Create header content with toggle and defaults panel
-        const headerContent = createTeacherHeader(teacherId, teacher, data);
-        header.appendChild(headerContent);
-
-        grid.appendChild(header);
-    }
-
-    // Create data rows (day/period combinations)
-    for (const day of DAYS) {
-        for (const period of periods) {
-            // Row header (day + period)
-            const rowHeader = document.createElement('div');
-            rowHeader.className = 'grid-cell grid-row-header';
-            rowHeader.dataset.day = day;
-
-            const isEditingThisPeriod = MainViewState.editingPeriodId === period.id;
-            if (isEditingThisPeriod && day === DAYS[0]) {
-                // Edit mode — only show input in first (Monday) row
-                rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period"> - <input type="text" class="period-edit-input" value="${escapeHtml(period.name)}" data-period-id="${period.id}"></span>`;
-            } else {
-                // Normal mode (or edit mode for non-Monday rows — show read-only)
-                rowHeader.innerHTML = `<span class="row-header-day">${DAY_ABBREVIATIONS[day]}</span><span class="row-header-period period-label-editable inline-editable-label" data-period-id="${period.id}"> - ${escapeHtml(period.name)}</span>`;
-            }
-            grid.appendChild(rowHeader);
-
-            // Data cells for each teacher
-            for (const [teacherId] of teachers) {
-                const cell = document.createElement('div');
-                cell.className = 'grid-cell grid-data-cell';
-                cell.dataset.day = day;
-                cell.dataset.period = period.id;
-                cell.dataset.teacherId = teacherId;
-
-                // Find the slot for this cell
-                const slot = getSlotForCell(data, day, period.id, teacherId);
-                if (slot) {
-                    // Check for conflicts on this slot
-                    const conflicts = MainViewState.conflictMap[slot.id] || [];
-
-                    if (conflicts.length > 0) {
-                        cell.classList.add('cell-conflict');
-                        cell.dataset.conflicts = JSON.stringify(conflicts);
-                    }
-
-                    cell.appendChild(createCellContent(data, slot, conflicts));
-                }
-
-                grid.appendChild(cell);
-            }
-        }
-    }
-
-    // Focus the edit input if in edit mode
-    if (MainViewState.editingTeacherId) {
-        const editInput = grid.querySelector('.teacher-edit-input');
-        if (editInput) {
-            editInput.focus();
-            editInput.select();
-        }
-    }
-
-    if (MainViewState.editingPeriodId) {
-        const periodInput = grid.querySelector('.period-edit-input');
-        if (periodInput) {
-            periodInput.focus();
-            periodInput.select();
-        }
-    }
+    setupGridColumns(grid, teachers.length);
+    renderTeacherHeaders(grid, teachers, data);
+    renderDataRows(grid, teachers, periods, data);
+    focusGridEditInput(grid);
 }
 
 /**

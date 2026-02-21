@@ -103,6 +103,44 @@ function entitiesToText(entities) {
     return sortedIds.map(id => entities[id].name).join('\n');
 }
 
+function buildItemsHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit) {
+    let html = '<ul class="entity-editor-items">';
+    for (const id of sortedIds) {
+        const entity = entities[id];
+        const isEditing = activeEditState &&
+                          activeEditState.entityType === entityType &&
+                          activeEditState.entityId === id;
+        html += isEditing
+            ? renderEditRow(entityType, id, entity.name)
+            : renderDisplayRow(entityType, id, entity.name, hasActiveEdit);
+    }
+    if (isAddingToThis) html += renderAddRow(entityType);
+    html += '</ul>';
+    return html;
+}
+
+function buildEntityListHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit) {
+    let html = '';
+    if (sortedIds.length === 0 && !isAddingToThis) {
+        html += '<div class="entity-empty">No items added yet</div>';
+    } else {
+        html += buildItemsHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit);
+    }
+    if (isAddingToThis && sortedIds.length === 0) {
+        html = '<ul class="entity-editor-items">' + renderAddRow(entityType) + '</ul>';
+    }
+    const addDisabled = hasActiveEdit ? 'disabled' : '';
+    html += `<button type="button" class="add-entity-btn" data-entity-type="${entityType}" ${addDisabled}>+ Add</button>`;
+    return html;
+}
+
+function focusEntityInput(container, entityType) {
+    if (activeEditState && activeEditState.entityType === entityType) {
+        const input = container.querySelector('.entity-edit-input');
+        if (input) { input.focus(); input.select(); }
+    }
+}
+
 /**
  * Render an entity list in its container
  * @param {string} containerId - ID of the container element
@@ -113,63 +151,12 @@ function renderEntityList(containerId, entityType) {
     if (!container) return;
 
     const state = entityState[entityType];
-    const entities = state.entities;
-    const sortedIds = Object.keys(entities).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-
-    // Check if there's an active add for this type
-    const isAddingToThis = activeEditState &&
-                           activeEditState.entityType === entityType &&
-                           activeEditState.isAdding;
-
-    // Check if any edit is active (to disable add button)
+    const sortedIds = Object.keys(state.entities).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    const isAddingToThis = activeEditState?.entityType === entityType && activeEditState.isAdding;
     const hasActiveEdit = activeEditState !== null;
 
-    let html = '';
-
-    if (sortedIds.length === 0 && !isAddingToThis) {
-        html += '<div class="entity-empty">No items added yet</div>';
-    } else {
-        html += '<ul class="entity-editor-items">';
-
-        for (const id of sortedIds) {
-            const entity = entities[id];
-            const isEditing = activeEditState &&
-                              activeEditState.entityType === entityType &&
-                              activeEditState.entityId === id;
-
-            if (isEditing) {
-                html += renderEditRow(entityType, id, entity.name);
-            } else {
-                html += renderDisplayRow(entityType, id, entity.name, hasActiveEdit);
-            }
-        }
-
-        // Add row if adding to this list
-        if (isAddingToThis) {
-            html += renderAddRow(entityType);
-        }
-
-        html += '</ul>';
-    }
-
-    // Add button (show add row inline when clicked, or show empty state with add row)
-    if (isAddingToThis && sortedIds.length === 0) {
-        html = '<ul class="entity-editor-items">' + renderAddRow(entityType) + '</ul>';
-    }
-
-    const addDisabled = hasActiveEdit ? 'disabled' : '';
-    html += `<button type="button" class="add-entity-btn" data-entity-type="${entityType}" ${addDisabled}>+ Add</button>`;
-
-    container.innerHTML = html;
-
-    // Focus input if in edit/add mode
-    if (activeEditState && activeEditState.entityType === entityType) {
-        const input = container.querySelector('.entity-edit-input');
-        if (input) {
-            input.focus();
-            input.select();
-        }
-    }
+    container.innerHTML = buildEntityListHTML(sortedIds, state.entities, entityType, isAddingToThis, hasActiveEdit);
+    focusEntityInput(container, entityType);
 }
 
 /**
