@@ -5,6 +5,12 @@
 // Constants
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const STORAGE_KEY = "timetableData";
+const ENTITY_FIELD_MAP = {
+    teachers:      'teacherId',
+    studentGroups: 'studentGroupId',
+    rooms:         'roomId',
+    subjects:      'subjectId',
+};
 
 /**
  * Creates an empty TimetableData structure
@@ -178,13 +184,7 @@ function getSlotsForDayPeriod(slots, day, period) {
  * @returns {Object[]} Filtered array of slots
  */
 function getSlotsForEntity(entityType, entityId, slots) {
-    const fieldMap = {
-        'teachers': 'teacherId',
-        'studentGroups': 'studentGroupId',
-        'rooms': 'roomId'
-    };
-
-    const field = fieldMap[entityType];
+    const field = ENTITY_FIELD_MAP[entityType];
     if (!field) {
         return [];
     }
@@ -636,13 +636,7 @@ function countSlotsForPeriods(data, newPeriodCount) {
  * @returns {number} Count of slots referencing this entity
  */
 function countSlotsReferencingEntity(entityType, entityId, slots) {
-    const fieldMap = {
-        'studentGroups': 'studentGroupId',
-        'rooms': 'roomId',
-        'subjects': 'subjectId'
-    };
-
-    const field = fieldMap[entityType];
+    const field = ENTITY_FIELD_MAP[entityType];
     if (!field) {
         return 0;
     }
@@ -848,6 +842,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         DAYS,
         STORAGE_KEY,
+        ENTITY_FIELD_MAP,
         createEmptyTimetableData,
         generateEntityId,
         generateSlotId,

@@ -445,12 +445,7 @@ function handleDelete(entityType, entityId) {
     // Apply orphaning and save immediately
     let data = loadData();
     if (data) {
-        const fieldMap = {
-            'studentGroups': 'studentGroupId',
-            'rooms': 'roomId',
-            'subjects': 'subjectId'
-        };
-        data.slots = orphanSlotReferences(data.slots, fieldMap[entityType], [entityId]);
+        data.slots = orphanSlotReferences(data.slots, ENTITY_FIELD_MAP[entityType], [entityId]);
         data[entityType] = { ...entityState[entityType].entities };
         saveData(data);
 

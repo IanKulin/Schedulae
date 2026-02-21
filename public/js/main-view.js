@@ -13,6 +13,12 @@ function saveChanges(data) {
     }
 }
 
+// Maps dropdown field names to their conflict type strings (as used in conflict objects)
+const FIELD_CONFLICT_TYPE_MAP = {
+    studentGroupId: 'studentGroup',
+    roomId:         'room',
+};
+
 /**
  * Main View module state
  * Encapsulates all mutable state for testing and reset capability
@@ -739,8 +745,7 @@ function updateConflictHighlighting(data) {
 
             for (const dropdown of dropdowns) {
                 const field = dropdown.dataset.field;
-                const type = field === 'studentGroupId' ? 'studentGroup' :
-                             field === 'roomId' ? 'room' : null;
+                const type = FIELD_CONFLICT_TYPE_MAP[field] ?? null;
 
                 if (type && conflictTypes.has(type)) {
                     dropdown.classList.add('dropdown-conflict');
