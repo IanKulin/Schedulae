@@ -16,9 +16,9 @@ let activeEditState = null; // { entityType, entityId } or { entityType, isAddin
 let loadedSlots = [];
 
 const ENTITY_CONFIG = {
-    studentGroups: { containerId: 'student-groups-list', errorFieldId: 'student-groups' },
-    rooms:         { containerId: 'rooms-list',           errorFieldId: 'rooms' },
-    subjects:      { containerId: 'subjects-list',        errorFieldId: 'subjects' },
+    studentGroups: { containerId: 'student-groups-list', errorFieldId: 'student-groups', addBtnContainerId: 'student-groups-add-btn' },
+    rooms:         { containerId: 'rooms-list',           errorFieldId: 'rooms',          addBtnContainerId: 'rooms-add-btn' },
+    subjects:      { containerId: 'subjects-list',        errorFieldId: 'subjects',        addBtnContainerId: 'subjects-add-btn' },
 };
 
 /**
@@ -129,9 +129,15 @@ function buildEntityListHTML(sortedIds, entities, entityType, isAddingToThis, ha
     if (isAddingToThis && sortedIds.length === 0) {
         html = '<ul class="entity-editor-items">' + renderAddRow(entityType) + '</ul>';
     }
-    const addDisabled = hasActiveEdit ? 'disabled' : '';
-    html += `<button type="button" class="add-entity-btn" data-entity-type="${entityType}" ${addDisabled}>+ Add</button>`;
     return html;
+}
+
+function renderAddButton(entityType, hasActiveEdit) {
+    const config = ENTITY_CONFIG[entityType];
+    const btnContainer = $(`#${config.addBtnContainerId}`);
+    if (!btnContainer) return;
+    const addDisabled = hasActiveEdit ? 'disabled' : '';
+    btnContainer.innerHTML = `<button type="button" class="add-entity-btn" data-entity-type="${entityType}" ${addDisabled}>+ Add</button>`;
 }
 
 function focusEntityInput(container, entityType) {
@@ -156,6 +162,7 @@ function renderEntityList(containerId, entityType) {
     const hasActiveEdit = activeEditState !== null;
 
     container.innerHTML = buildEntityListHTML(sortedIds, state.entities, entityType, isAddingToThis, hasActiveEdit);
+    renderAddButton(entityType, hasActiveEdit);
     focusEntityInput(container, entityType);
 }
 

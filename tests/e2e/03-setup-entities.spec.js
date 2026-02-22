@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 async function addEntity(page, listId, name) {
     const container = page.locator(`#${listId}`);
-    await container.locator('button.add-entity-btn').click();
+    await page.locator(`#${listId.replace(/-list$/, '-add-btn')} button.add-entity-btn`).click();
     const input = container.locator('input.entity-edit-input');
     await input.fill(name);
     await input.press('Enter');
@@ -16,7 +16,7 @@ async function addEntity(page, listId, name) {
 
 test('click + Add shows input', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     await expect(container.locator('input.entity-edit-input')).toBeVisible();
 });
 
@@ -29,7 +29,7 @@ test('type name and press Enter saves entity', async ({ page }) => {
 
 test('type name and click Save saves entity', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     const input = container.locator('input.entity-edit-input');
     await input.fill('Class B');
     await container.locator('button[data-action="save-add"]').click();
@@ -40,7 +40,7 @@ test('type name and click Save saves entity', async ({ page }) => {
 
 test('click Cancel does not save', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     const input = container.locator('input.entity-edit-input');
     await input.fill('Cancelled Group');
     await container.locator('button[data-action="cancel-add"]').click();
@@ -51,7 +51,7 @@ test('click Cancel does not save', async ({ page }) => {
 
 test('press Escape cancels add', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     const input = container.locator('input.entity-edit-input');
     await input.fill('Escaped Group');
     await input.press('Escape');
@@ -62,7 +62,7 @@ test('press Escape cancels add', async ({ page }) => {
 
 test('blank name shows error', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     await container.locator('button[data-action="save-add"]').click();
     const error = page.locator('#student-groups-error');
     await expect(error).toHaveText(/cannot be blank/i);
@@ -71,7 +71,7 @@ test('blank name shows error', async ({ page }) => {
 test('duplicate name shows error', async ({ page }) => {
     await addEntity(page, 'student-groups-list', 'Class A');
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     const input = container.locator('input.entity-edit-input');
     await input.fill('Class A');
     await input.press('Enter');

@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 
 async function addEntity(page, listId, name) {
     const container = page.locator(`#${listId}`);
-    await container.locator('button.add-entity-btn').click();
+    await page.locator(`#${listId.replace(/-list$/, '-add-btn')} button.add-entity-btn`).click();
     const input = container.locator('input.entity-edit-input');
     await input.fill(name);
     await input.press('Enter');
@@ -39,7 +39,7 @@ test('unicode characters accepted and stored correctly', async ({ page }) => {
 
 test('control characters rejected with error', async ({ page }) => {
     const container = page.locator('#student-groups-list');
-    await container.locator('button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     const input = container.locator('input.entity-edit-input');
     // Set control character value via evaluate
     await input.evaluate((el) => {

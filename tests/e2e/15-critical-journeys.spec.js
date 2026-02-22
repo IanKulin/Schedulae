@@ -12,13 +12,13 @@ test('full workflow: setup → fill → conflict → resolve → export → impo
     await page.fill('#teachers-input', 'Ms. Smith\nMr. Jones');
     await page.click('#save-teachers-btn');
     // 4. Add student group, room, subject
-    await page.locator('#student-groups-list button.add-entity-btn').click();
+    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
     await page.locator('#student-groups-list input.entity-edit-input').fill('Class A');
     await page.locator('#student-groups-list input.entity-edit-input').press('Enter');
-    await page.locator('#rooms-list button.add-entity-btn').click();
+    await page.locator('#rooms-add-btn button.add-entity-btn').click();
     await page.locator('#rooms-list input.entity-edit-input').fill('Room 1');
     await page.locator('#rooms-list input.entity-edit-input').press('Enter');
-    await page.locator('#subjects-list button.add-entity-btn').click();
+    await page.locator('#subjects-add-btn button.add-entity-btn').click();
     await page.locator('#subjects-list input.entity-edit-input').fill('Maths');
     await page.locator('#subjects-list input.entity-edit-input').press('Enter');
     // 5. Go to builder and fill some cells
