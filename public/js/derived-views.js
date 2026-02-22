@@ -38,7 +38,7 @@ const TIMETABLE_CONFIG = {
 /**
  * Map entity field IDs to their data source
  */
-const ENTITY_FIELD_MAP = {
+const SLOT_FIELD_TO_ENTITY = {
     'teacherId': 'teachers',
     'studentGroupId': 'studentGroups',
     'roomId': 'rooms',
@@ -265,7 +265,7 @@ function createIndividualCellContent(slot, data, config) {
         const entityId = slot[field];
 
         if (entityId) {
-            const entityType = ENTITY_FIELD_MAP[field];
+            const entityType = SLOT_FIELD_TO_ENTITY[field];
             const entity = data[entityType] && data[entityType][entityId];
             if (entity) {
                 const line = document.createElement('div');
@@ -297,7 +297,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         TIMETABLE_CONFIG,
         DERIVED_VIEW_CONFIG,
-        ENTITY_FIELD_MAP,
+        SLOT_FIELD_TO_ENTITY,
         getNavActiveClass
     };
 }

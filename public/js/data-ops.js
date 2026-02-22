@@ -5,7 +5,7 @@
 
 // In Node: import data.js dependencies; in browser they are already globals
 if (typeof module !== 'undefined' && module.exports) {
-    var { DAYS, ENTITY_FIELD_MAP, generateSlotId, createSlotsForTeacher } = require('./data.js');
+    ({ DAYS, ENTITY_FIELD_MAP, generateSlotId, createSlotsForTeacher } = require('./data.js'));
 }
 
 /**
