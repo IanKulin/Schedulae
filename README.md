@@ -110,6 +110,20 @@ This starts a server at http://localhost:3000.
 
 The node/express server is just serving the static files - there's no back end, but the tests run with the node built-in test runner.
 
+### Docker
+
+To build and push the image to `ghcr.io/iankulin/schedulae`:
+```bash
+npm run docker:push
+```
+This runs `docker-push.sh`, which reads the version from `package.json` and builds/pushes four tags: the full semver (e.g. `1.0.0`), major.minor (`1.0`), major (`1`), and `latest`.
+
+To run the published image locally:
+```bash
+npm run docker:run
+```
+This starts the app at http://localhost:3000.
+
 ### Browser Storage
 
 Data is stored in LocalStorage under the key `timetableData`. Clearing browser data will delete the timetable. Use the export feature to back up your work.
