@@ -9,14 +9,15 @@
     "test:e2e": "playwright test",
     "test:all": "npm test && npm run test:e2e",
     "docker:build": "docker build -t ghcr.io/iankulin/schedulae .",
-    "docker:run": "docker run -p 3000:3000 ghcr.io/iankulin/schedulae"
+    "docker:run": "docker run -p 3000:3000 ghcr.io/iankulin/schedulae",
+    "docker:push": "docker push ghcr.io/iankulin/schedulae"
   },
   "keywords": [
     "timetable",
     "scheduling",
     "education"
   ],
-  "license": "ISC",
+  "license": "GPL-3.0",
   "dependencies": {
     "express": "^4.21.0"
   },
