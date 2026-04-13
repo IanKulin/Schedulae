@@ -11,6 +11,13 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from public directory only
 app.use(express.static(join(__dirname, 'public')));
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Schedulae running at http://localhost:${PORT}`);
 });
+
+function shutdown() {
+    server.close(() => process.exit(0));
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
