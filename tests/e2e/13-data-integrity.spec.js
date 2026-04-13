@@ -12,9 +12,9 @@ test('deleting student group nulls studentGroupId in slots', async ({ page }) =>
     data.slots[0].studentGroupId = '1';
     await seedData(page, data);
     await page.click('#nav-setup');
-    const container = page.locator('#student-groups-list');
     page.once('dialog', dialog => dialog.accept());
-    await container.locator('button[data-action="delete"]').first().click();
+    await page.fill('#student-groups-input', '');
+    await page.click('#save-student-groups-btn');
     const stored = await getStoredData(page);
     expect(stored.slots.length).toBeGreaterThan(0);
     const slot = stored.slots.find(s => s.id === data.slots[0].id);
@@ -32,9 +32,9 @@ test('deleting room nulls roomId in slots', async ({ page }) => {
     data.slots[0].roomId = '1';
     await seedData(page, data);
     await page.click('#nav-setup');
-    const container = page.locator('#rooms-list');
     page.once('dialog', dialog => dialog.accept());
-    await container.locator('button[data-action="delete"]').first().click();
+    await page.fill('#rooms-input', '');
+    await page.click('#save-rooms-btn');
     const stored = await getStoredData(page);
     const slot = stored.slots.find(s => s.id === data.slots[0].id);
     expect(slot.roomId).toBeNull();
@@ -51,9 +51,9 @@ test('deleting subject nulls subjectId in slots', async ({ page }) => {
     data.slots[0].subjectId = '1';
     await seedData(page, data);
     await page.click('#nav-setup');
-    const container = page.locator('#subjects-list');
     page.once('dialog', dialog => dialog.accept());
-    await container.locator('button[data-action="delete"]').first().click();
+    await page.fill('#subjects-input', '');
+    await page.click('#save-subjects-btn');
     const stored = await getStoredData(page);
     const slot = stored.slots.find(s => s.id === data.slots[0].id);
     expect(slot.subjectId).toBeNull();

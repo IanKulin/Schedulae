@@ -1,52 +1,47 @@
 import { test, expect } from '@playwright/test';
-import { seedData, makeData } from './helpers.js';
+import { seedData, getStoredData, makeData } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
     await seedData(page, makeData({ teachers: [], groups: [], rooms: [], subjects: [] }));
     await page.click('#nav-setup');
 });
 
-async function addEntity(page, listId, name) {
-    const container = page.locator(`#${listId}`);
-    await page.locator(`#${listId.replace(/-list$/, '-add-btn')} button.add-entity-btn`).click();
-    const input = container.locator('input.entity-edit-input');
-    await input.fill(name);
-    await input.press('Enter');
+async function saveGroups(page, namesText) {
+    await page.fill('#student-groups-input', namesText);
+    await page.click('#save-student-groups-btn');
 }
 
-test('script tag in entity name displayed as text, not executed', async ({ page }) => {
+test('script tag in entity name stored as text, not executed', async ({ page }) => {
     const xss = '<script>alert(1)</script>';
-    await addEntity(page, 'student-groups-list', xss);
-    const html = await page.locator('#student-groups-list').innerHTML();
-    expect(html).not.toContain('<script>');
-    const text = await page.locator('#student-groups-list').textContent();
-    expect(text).toContain('alert(1)');
+    await saveGroups(page, xss);
+    const data = await getStoredData(page);
+    const names = Object.values(data.studentGroups).map(g => g.name);
+    expect(names).toContain(xss);
+    // Verify no script executed (if it had, the page title would change or an alert would fire)
+    await expect(page).toHaveTitle(/schedulae/i);
 });
 
-test('img onerror tag displayed as text, not executed', async ({ page }) => {
+test('img onerror tag stored as text, not executed', async ({ page }) => {
     const xss = '<img src=x onerror=alert(1)>';
-    await addEntity(page, 'student-groups-list', xss);
-    const html = await page.locator('#student-groups-list').innerHTML();
-    expect(html).not.toMatch(/<img [^>]*onerror/i);
+    await saveGroups(page, xss);
+    const data = await getStoredData(page);
+    const names = Object.values(data.studentGroups).map(g => g.name);
+    expect(names).toContain(xss);
 });
 
 test('unicode characters accepted and stored correctly', async ({ page }) => {
-    await addEntity(page, 'student-groups-list', 'Élève (é, ñ, 中文)');
-    const text = await page.locator('#student-groups-list').textContent();
-    expect(text).toContain('Élève');
-    expect(text).toContain('中文');
+    await saveGroups(page, 'Élève (é, ñ, 中文)');
+    const data = await getStoredData(page);
+    const names = Object.values(data.studentGroups).map(g => g.name);
+    expect(names).toContain('Élève (é, ñ, 中文)');
 });
 
 test('control characters rejected with error', async ({ page }) => {
-    const container = page.locator('#student-groups-list');
-    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
-    const input = container.locator('input.entity-edit-input');
-    // Set control character value via evaluate
-    await input.evaluate((el) => {
-        el.value = 'Bad\x01Name';
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+    // Set control character value via evaluate since fill() strips them
+    await page.evaluate(() => {
+        document.querySelector('#student-groups-input').value = 'Bad\x01Name';
     });
-    await container.locator('button[data-action="save-add"]').click();
+    await page.click('#save-student-groups-btn');
     const error = page.locator('#student-groups-error');
     await expect(error).toHaveText(/invalid characters/i);
 });

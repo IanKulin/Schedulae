@@ -85,7 +85,8 @@ test('removing teacher from textarea removes column from grid', async ({ page })
     // Add two teachers
     await page.fill('#teachers-input', 'Ms. Smith\nMr. Jones');
     await page.click('#save-teachers-btn');
-    // Remove Mr. Jones (no dialog expected)
+    // Remove Mr. Jones - confirm the removal warning dialog (teacher has slots)
+    page.once('dialog', dialog => dialog.accept());
     await page.fill('#teachers-input', 'Ms. Smith');
     await page.click('#save-teachers-btn');
     await page.click('#nav-builder');

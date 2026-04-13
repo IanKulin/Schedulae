@@ -2,25 +2,6 @@
  * Schedulae - Data Entry Page Module
  */
 
-// Module-level state for entity editing
-const entityState = {
-    studentGroups: { entities: {}, pendingDeletes: [] },
-    rooms: { entities: {}, pendingDeletes: [] },
-    subjects: { entities: {}, pendingDeletes: [] }
-};
-
-// Track which entity list has an active edit/add
-let activeEditState = null; // { entityType, entityId } or { entityType, isAdding: true }
-
-// Reference to loaded slots for counting references
-let loadedSlots = [];
-
-const ENTITY_CONFIG = {
-    studentGroups: { containerId: 'student-groups-list', errorFieldId: 'student-groups', addBtnContainerId: 'student-groups-add-btn' },
-    rooms:         { containerId: 'rooms-list',           errorFieldId: 'rooms',          addBtnContainerId: 'rooms-add-btn' },
-    subjects:      { containerId: 'subjects-list',        errorFieldId: 'subjects',        addBtnContainerId: 'subjects-add-btn' },
-};
-
 /**
  * Initialize the Setup page (formerly Data Entry)
  * Shows first-time setup or editing mode based on whether data exists
@@ -42,28 +23,14 @@ function initDataEntryPage() {
         firstTimeSetup.classList.add('page-hidden');
         editingSection.classList.remove('page-hidden');
 
-        // Get form elements
-        const periodsInput = $('#periods-input');
-        const teachersInput = $('#teachers-input');
-
         // Populate periods
-        periodsInput.value = data.periods.length;
+        $('#periods-input').value = data.periods.length;
 
-        // Populate teachers (still uses textarea)
-        teachersInput.value = entitiesToText(data.teachers);
-
-        // Initialize entity state from loaded data
-        entityState.studentGroups = { entities: { ...data.studentGroups }, pendingDeletes: [] };
-        entityState.rooms = { entities: { ...data.rooms }, pendingDeletes: [] };
-        entityState.subjects = { entities: { ...data.subjects }, pendingDeletes: [] };
-
-        // Store slots for reference counting
-        loadedSlots = data.slots || [];
-
-        // Render entity lists
-        renderEntityList('student-groups-list', 'studentGroups');
-        renderEntityList('rooms-list', 'rooms');
-        renderEntityList('subjects-list', 'subjects');
+        // Populate all entity textareas
+        $('#teachers-input').value       = entitiesToText(data.teachers);
+        $('#student-groups-input').value = entitiesToText(data.studentGroups);
+        $('#rooms-input').value          = entitiesToText(data.rooms);
+        $('#subjects-input').value       = entitiesToText(data.subjects);
     } else {
         // Show first-time setup, hide editing section
         firstTimeSetup.classList.remove('page-hidden');
@@ -74,16 +41,7 @@ function initDataEntryPage() {
         if (initialPeriodsInput) {
             initialPeriodsInput.value = 6;
         }
-
-        // Initialize empty entity state
-        entityState.studentGroups = { entities: {}, pendingDeletes: [] };
-        entityState.rooms = { entities: {}, pendingDeletes: [] };
-        entityState.subjects = { entities: {}, pendingDeletes: [] };
-        loadedSlots = [];
     }
-
-    // Reset active edit state
-    activeEditState = null;
 }
 
 /**
@@ -103,406 +61,36 @@ function entitiesToText(entities) {
     return sortedIds.map(id => entities[id].name).join('\n');
 }
 
-function buildItemsHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit) {
-    let html = '<ul class="entity-editor-items">';
-    for (const id of sortedIds) {
-        const entity = entities[id];
-        const isEditing = activeEditState &&
-                          activeEditState.entityType === entityType &&
-                          activeEditState.entityId === id;
-        html += isEditing
-            ? renderEditRow(entityType, id, entity.name)
-            : renderDisplayRow(entityType, id, entity.name, hasActiveEdit);
-    }
-    if (isAddingToThis) html += renderAddRow(entityType);
-    html += '</ul>';
-    return html;
-}
-
-function buildEntityListHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit) {
-    let html = '';
-    if (sortedIds.length === 0 && !isAddingToThis) {
-        html += '<div class="entity-empty">No items added yet</div>';
-    } else {
-        html += buildItemsHTML(sortedIds, entities, entityType, isAddingToThis, hasActiveEdit);
-    }
-    if (isAddingToThis && sortedIds.length === 0) {
-        html = '<ul class="entity-editor-items">' + renderAddRow(entityType) + '</ul>';
-    }
-    return html;
-}
-
-function renderAddButton(entityType, hasActiveEdit) {
-    const config = ENTITY_CONFIG[entityType];
-    const btnContainer = $(`#${config.addBtnContainerId}`);
-    if (!btnContainer) return;
-    const addDisabled = hasActiveEdit ? 'disabled' : '';
-    btnContainer.innerHTML = `<button type="button" class="add-entity-btn" data-entity-type="${entityType}" ${addDisabled}>+ Add</button>`;
-}
-
-function focusEntityInput(container, entityType) {
-    if (activeEditState && activeEditState.entityType === entityType) {
-        const input = container.querySelector('.entity-edit-input');
-        if (input) { input.focus(); input.select(); }
-    }
-}
-
 /**
- * Render an entity list in its container
- * @param {string} containerId - ID of the container element
- * @param {string} entityType - Entity type key ('studentGroups', 'rooms', 'subjects')
+ * Build a removal confirmation message if deleted entities have slot references.
+ * @param {string[]} deletedIds - IDs being removed
+ * @param {Object} previousEntities - Entity map before the save (to look up names)
+ * @param {string} entityType - e.g. 'rooms'
+ * @param {Object[]} slots - Current slot array
+ * @returns {string|null} Confirmation message, or null if no confirmation needed
  */
-function renderEntityList(containerId, entityType) {
-    const container = $(`#${containerId}`);
-    if (!container) return;
+function buildRemovalWarning(deletedIds, previousEntities, entityType, slots) {
+    if (deletedIds.length === 0) return null;
 
-    const state = entityState[entityType];
-    const sortedIds = Object.keys(state.entities).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-    const isAddingToThis = activeEditState?.entityType === entityType && activeEditState.isAdding;
-    const hasActiveEdit = activeEditState !== null;
-
-    container.innerHTML = buildEntityListHTML(sortedIds, state.entities, entityType, isAddingToThis, hasActiveEdit);
-    renderAddButton(entityType, hasActiveEdit);
-    focusEntityInput(container, entityType);
-}
-
-/**
- * Render a display row for an entity
- */
-function renderDisplayRow(entityType, id, name, hasActiveEdit) {
-    const escapedName = escapeHtml(name);
-    const disabled = hasActiveEdit ? 'disabled' : '';
-
-    return `
-        <li class="entity-item" data-entity-id="${id}">
-            <span class="entity-name">${escapedName}</span>
-            <div class="entity-actions">
-                <button type="button" class="btn-icon btn-icon--edit"
-                        data-action="edit" data-entity-type="${entityType}" data-entity-id="${id}"
-                        ${disabled}>Edit</button>
-                <button type="button" class="btn-icon btn-icon--delete"
-                        data-action="delete" data-entity-type="${entityType}" data-entity-id="${id}"
-                        ${disabled}>Delete</button>
-            </div>
-        </li>
-    `;
-}
-
-/**
- * Render an edit row for an entity
- */
-function renderEditRow(entityType, id, currentName) {
-    const escapedName = escapeHtml(currentName);
-
-    return `
-        <li class="entity-item entity-item--editing" data-entity-id="${id}">
-            <input type="text" class="entity-edit-input" value="${escapedName}"
-                   data-entity-type="${entityType}" data-entity-id="${id}">
-            <div class="entity-edit-actions">
-                <button type="button" class="btn-edit-save"
-                        data-action="save-edit" data-entity-type="${entityType}" data-entity-id="${id}">Save</button>
-                <button type="button" class="btn-edit-cancel"
-                        data-action="cancel-edit" data-entity-type="${entityType}">Cancel</button>
-            </div>
-        </li>
-    `;
-}
-
-/**
- * Render an add row for new entity
- */
-function renderAddRow(entityType) {
-    return `
-        <li class="entity-item entity-item--editing">
-            <input type="text" class="entity-edit-input" value=""
-                   data-entity-type="${entityType}" data-is-add="true" placeholder="Enter name...">
-            <div class="entity-edit-actions">
-                <button type="button" class="btn-edit-save"
-                        data-action="save-add" data-entity-type="${entityType}">Save</button>
-                <button type="button" class="btn-edit-cancel"
-                        data-action="cancel-add" data-entity-type="${entityType}">Cancel</button>
-            </div>
-        </li>
-    `;
-}
-
-/**
- * Handle clicks within entity editors
- */
-function handleEntityEditorClick(event) {
-    const target = event.target;
-    const action = target.dataset.action;
-    const entityType = target.dataset.entityType;
-
-    if (!action) {
-        // Check if it's an add button
-        if (target.classList.contains('add-entity-btn')) {
-            const type = target.dataset.entityType;
-            if (type && !activeEditState) {
-                enterAddMode(type);
-            }
-        }
-        return;
-    }
-
-    switch (action) {
-        case 'edit':
-            enterEditMode(entityType, target.dataset.entityId);
-            break;
-        case 'delete':
-            handleDelete(entityType, target.dataset.entityId);
-            break;
-        case 'save-edit':
-            saveEdit(entityType, target.dataset.entityId);
-            break;
-        case 'cancel-edit':
-            cancelEdit(entityType);
-            break;
-        case 'save-add':
-            saveAdd(entityType);
-            break;
-        case 'cancel-add':
-            cancelAdd(entityType);
-            break;
-    }
-}
-
-/**
- * Handle keydown events in entity edit inputs
- */
-function handleEntityEditorKeydown(event) {
-    if (!event.target.classList.contains('entity-edit-input')) return;
-
-    const entityType = event.target.dataset.entityType;
-    const entityId = event.target.dataset.entityId;
-    const isAdd = event.target.dataset.isAdd === 'true';
-
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        if (isAdd) {
-            saveAdd(entityType);
-        } else {
-            saveEdit(entityType, entityId);
-        }
-    } else if (event.key === 'Escape') {
-        event.preventDefault();
-        if (isAdd) {
-            cancelAdd(entityType);
-        } else {
-            cancelEdit(entityType);
-        }
-    }
-}
-
-/**
- * Enter edit mode for an entity
- */
-function enterEditMode(entityType, entityId) {
-    if (activeEditState) return; // Already editing
-
-    activeEditState = { entityType, entityId };
-    renderAllEntityLists();
-}
-
-/**
- * Enter add mode for an entity type
- */
-function enterAddMode(entityType) {
-    if (activeEditState) return; // Already editing
-
-    activeEditState = { entityType, isAdding: true };
-    renderAllEntityLists();
-}
-
-/**
- * Save current entity state to LocalStorage
- * @returns {boolean} True if save succeeded
- */
-function saveCurrentState() {
-    let data = loadData();
-    if (!data) return false;
-
-    // Apply current entity state
-    data.studentGroups = { ...entityState.studentGroups.entities };
-    data.rooms = { ...entityState.rooms.entities };
-    data.subjects = { ...entityState.subjects.entities };
-
-    return saveData(data);
-}
-
-/**
- * Save an edit operation (with immediate persistence)
- */
-function saveEdit(entityType, entityId) {
-    const container = getContainerForType(entityType);
-    const input = container.querySelector('.entity-edit-input');
-    if (!input) return;
-
-    const newName = input.value.trim();
-
-    // Validate
-    const error = validateSingleEntityName(entityType, newName, entityId);
-    if (error) {
-        showFieldError(getErrorFieldId(entityType), error);
-        input.focus();
-        return;
-    }
-
-    // Clear any previous error
-    showFieldError(getErrorFieldId(entityType), '');
-
-    // Update entity name
-    entityState[entityType].entities[entityId] = { id: entityId, name: newName };
-
-    // Save immediately to LocalStorage
-    saveCurrentState();
-
-    // Exit edit mode
-    activeEditState = null;
-    renderAllEntityLists();
-}
-
-/**
- * Cancel an edit operation
- */
-function cancelEdit(entityType) {
-    activeEditState = null;
-    showFieldError(getErrorFieldId(entityType), '');
-    renderAllEntityLists();
-}
-
-/**
- * Save an add operation (with immediate persistence)
- */
-function saveAdd(entityType) {
-    const container = getContainerForType(entityType);
-    const input = container.querySelector('.entity-edit-input');
-    if (!input) return;
-
-    const newName = input.value.trim();
-
-    // Validate
-    const error = validateSingleEntityName(entityType, newName, null);
-    if (error) {
-        showFieldError(getErrorFieldId(entityType), error);
-        input.focus();
-        return;
-    }
-
-    // Clear any previous error
-    showFieldError(getErrorFieldId(entityType), '');
-
-    // Generate new ID and add entity
-    const newId = generateEntityId(entityType, { [entityType]: entityState[entityType].entities });
-    entityState[entityType].entities[newId] = { id: newId, name: newName };
-
-    // Save immediately to LocalStorage
-    saveCurrentState();
-
-    // Exit add mode
-    activeEditState = null;
-    renderAllEntityLists();
-}
-
-/**
- * Cancel an add operation
- */
-function cancelAdd(entityType) {
-    activeEditState = null;
-    showFieldError(getErrorFieldId(entityType), '');
-    renderAllEntityLists();
-}
-
-/**
- * Handle delete of an entity (with immediate persistence)
- */
-function handleDelete(entityType, entityId) {
-    const entity = entityState[entityType].entities[entityId];
-    if (!entity) return;
-
-    // Count slot references
-    const slotCount = countSlotsReferencingEntity(entityType, entityId, loadedSlots);
-
-    // Build confirmation message
-    let message = `Delete '${entity.name}'?`;
-    if (slotCount > 0) {
-        message = `Delete '${entity.name}'? This will remove it from ${slotCount} slot${slotCount !== 1 ? 's' : ''}.`;
-    }
-
-    if (!confirm(message)) {
-        return;
-    }
-
-    // Remove from entities
-    delete entityState[entityType].entities[entityId];
-
-    // Apply orphaning and save immediately
-    let data = loadData();
-    if (data) {
-        data.slots = orphanSlotReferences(data.slots, ENTITY_FIELD_MAP[entityType], [entityId]);
-        data[entityType] = { ...entityState[entityType].entities };
-        saveData(data);
-
-        // Update loaded slots reference
-        loadedSlots = data.slots;
-    }
-
-    // Clear pending deletes (no longer needed with immediate saves)
-    entityState[entityType].pendingDeletes = [];
-
-    renderAllEntityLists();
-}
-
-/**
- * Validate a single entity name
- * @returns {string|null} Error message or null if valid
- */
-function validateSingleEntityName(entityType, name, excludeId) {
-    if (!name || name.length === 0) {
-        return 'Name cannot be blank';
-    }
-
-    if (hasInvalidCharacters(name)) {
-        return 'Name contains invalid characters';
-    }
-
-    // Check for duplicates
-    const entities = entityState[entityType].entities;
-    for (const [id, entity] of Object.entries(entities)) {
-        if (id !== excludeId && entity.name === name) {
-            return `Duplicate name: "${name}"`;
+    const affected = [];
+    for (const id of deletedIds) {
+        const count = countSlotsReferencingEntity(entityType, id, slots);
+        if (count > 0) {
+            const name = previousEntities[id]?.name ?? id;
+            affected.push({ name, count });
         }
     }
 
-    return null;
-}
+    if (affected.length === 0) return null;
 
-/**
- * Get container element for an entity type
- */
-function getContainerForType(entityType) {
-    return $(`#${ENTITY_CONFIG[entityType].containerId}`);
-}
-
-/**
- * Get error field ID for an entity type
- */
-function getErrorFieldId(entityType) {
-    return ENTITY_CONFIG[entityType].errorFieldId;
-}
-
-/**
- * Render all entity lists
- */
-function renderAllEntityLists() {
-    renderEntityList('student-groups-list', 'studentGroups');
-    renderEntityList('rooms-list', 'rooms');
-    renderEntityList('subjects-list', 'subjects');
+    const totalSlots = affected.reduce((sum, a) => sum + a.count, 0);
+    const itemList = affected.map(a => `"${a.name}" (${a.count} slot${a.count !== 1 ? 's' : ''})`).join(', ');
+    return `Removing ${itemList} will clear ${totalSlots} slot reference${totalSlots !== 1 ? 's' : ''}. Continue?`;
 }
 
 /**
  * Show an error message for a specific field
- * @param {string} fieldId - Base ID of the field (without -input suffix)
+ * @param {string} fieldId - Base ID of the field (without -error suffix)
  * @param {string} message - Error message to display
  */
 function showFieldError(fieldId, message) {
@@ -540,13 +128,11 @@ function showSaveConfirmation(buttonId) {
 
 /**
  * Handle Save Teachers button click
- * Saves teachers from textarea to LocalStorage immediately
  */
 function handleSaveTeachers() {
     const teachersText = $('#teachers-input').value;
     const names = parseTextareaToNames(teachersText);
 
-    // Validate
     const errors = validateEntityNames(names);
     if (errors.length > 0) {
         showFieldError('teachers', errors[0]);
@@ -556,8 +142,10 @@ function handleSaveTeachers() {
     let data = loadData();
     if (!data) return;
 
-    // Sync teachers (existing logic)
     const teacherSync = syncEntities(data.teachers, names, 'teachers', data);
+
+    const warning = buildRemovalWarning(teacherSync.deletedIds, data.teachers, 'teachers', data.slots);
+    if (warning && !confirm(warning)) return;
 
     // Handle deleted teachers - remove their slots
     if (teacherSync.deletedIds.length > 0) {
@@ -575,22 +163,99 @@ function handleSaveTeachers() {
     data.teachers = teacherSync.entities;
 
     if (saveData(data)) {
-        showFieldError('teachers', ''); // Clear any error
+        showFieldError('teachers', '');
         showSaveConfirmation('save-teachers-btn');
-        // Update loaded slots reference
-        loadedSlots = data.slots;
+    }
+}
+
+/**
+ * Handle Save Student Groups button click
+ */
+function handleSaveStudentGroups() {
+    const names = parseTextareaToNames($('#student-groups-input').value);
+    const errors = validateEntityNames(names);
+    if (errors.length > 0) { showFieldError('student-groups', errors[0]); return; }
+
+    let data = loadData();
+    if (!data) return;
+
+    const sync = syncEntities(data.studentGroups, names, 'studentGroups', data);
+
+    const warning = buildRemovalWarning(sync.deletedIds, data.studentGroups, 'studentGroups', data.slots);
+    if (warning && !confirm(warning)) return;
+
+    if (sync.deletedIds.length > 0) {
+        data.slots = orphanSlotReferences(data.slots, ENTITY_FIELD_MAP['studentGroups'], sync.deletedIds);
+    }
+    data.studentGroups = sync.entities;
+
+    if (saveData(data)) {
+        showFieldError('student-groups', '');
+        showSaveConfirmation('save-student-groups-btn');
+    }
+}
+
+/**
+ * Handle Save Rooms button click
+ */
+function handleSaveRooms() {
+    const names = parseTextareaToNames($('#rooms-input').value);
+    const errors = validateEntityNames(names);
+    if (errors.length > 0) { showFieldError('rooms', errors[0]); return; }
+
+    let data = loadData();
+    if (!data) return;
+
+    const sync = syncEntities(data.rooms, names, 'rooms', data);
+
+    const warning = buildRemovalWarning(sync.deletedIds, data.rooms, 'rooms', data.slots);
+    if (warning && !confirm(warning)) return;
+
+    if (sync.deletedIds.length > 0) {
+        data.slots = orphanSlotReferences(data.slots, ENTITY_FIELD_MAP['rooms'], sync.deletedIds);
+    }
+    data.rooms = sync.entities;
+
+    if (saveData(data)) {
+        showFieldError('rooms', '');
+        showSaveConfirmation('save-rooms-btn');
+    }
+}
+
+/**
+ * Handle Save Subjects button click
+ */
+function handleSaveSubjects() {
+    const names = parseTextareaToNames($('#subjects-input').value);
+    const errors = validateEntityNames(names);
+    if (errors.length > 0) { showFieldError('subjects', errors[0]); return; }
+
+    let data = loadData();
+    if (!data) return;
+
+    const sync = syncEntities(data.subjects, names, 'subjects', data);
+
+    const warning = buildRemovalWarning(sync.deletedIds, data.subjects, 'subjects', data.slots);
+    if (warning && !confirm(warning)) return;
+
+    if (sync.deletedIds.length > 0) {
+        data.slots = orphanSlotReferences(data.slots, ENTITY_FIELD_MAP['subjects'], sync.deletedIds);
+    }
+    data.subjects = sync.entities;
+
+    if (saveData(data)) {
+        showFieldError('subjects', '');
+        showSaveConfirmation('save-subjects-btn');
     }
 }
 
 /**
  * Handle Save Periods button click
- * Saves period count to LocalStorage immediately
  */
 function handleSavePeriods() {
     const periodsValue = $('#periods-input').value;
     const newCount = parseInt(periodsValue, 10);
 
-    // Validate
     const periodsError = validatePeriods(periodsValue);
     if (periodsError) {
         showFieldError('periods', periodsError);
@@ -600,20 +265,16 @@ function handleSavePeriods() {
     let data = loadData();
     if (!data) return;
 
-    // Use existing period change logic (includes confirmation for reduction)
     if (handlePeriodChange(data, newCount)) {
         if (saveData(data)) {
             showFieldError('periods', '');
             showSaveConfirmation('save-periods-btn');
-            // Update loaded slots reference
-            loadedSlots = data.slots;
         }
     }
 }
 
 /**
  * Handle Create Timetable button click
- * Creates initial timetable data structure
  */
 function handleCreateTimetable() {
     const periodsValue = $('#initial-periods').value;
@@ -626,10 +287,9 @@ function handleCreateTimetable() {
 
     const data = createEmptyTimetableData(periodCount);
     if (saveData(data)) {
-        initDataEntryPage(); // Reinitialize to show editing mode
+        initDataEntryPage();
     }
 }
-
 
 /**
  * Handle changes to period count with user confirmation for reduction
@@ -645,7 +305,6 @@ function handlePeriodChange(data, newCount) {
         return true;
     } else if (newCount < currentCount) {
         const affectedSlots = countSlotsForPeriods(data, newCount);
-        const periodsToRemove = currentCount - newCount;
         const removedNames = data.periods
             .filter(p => p.id > newCount)
             .map(p => p.name)
@@ -662,31 +321,24 @@ function handlePeriodChange(data, newCount) {
     return true;
 }
 
-
 /**
- * Set up event listeners for the Setup page (formerly Data Entry)
+ * Set up event listeners for the Setup page
  */
 function setupDataEntryEventListeners() {
-    const form = $('#data-entry-form');
     const saveFileButton = $('#save-file-button');
     const loadFileButton = $('#load-file-button');
     const fileInput = $('#file-input');
     const createTimetableBtn = $('#create-timetable-btn');
     const savePeriodsBtn = $('#save-periods-btn');
     const saveTeachersBtn = $('#save-teachers-btn');
+    const saveStudentGroupsBtn = $('#save-student-groups-btn');
+    const saveRoomsBtn = $('#save-rooms-btn');
+    const saveSubjectsBtn = $('#save-subjects-btn');
 
-    if (form) {
-        // Add delegated event listeners for entity editor clicks and keydowns
-        form.addEventListener('click', handleEntityEditorClick);
-        form.addEventListener('keydown', handleEntityEditorKeydown);
-    }
-
-    // First-time setup
     if (createTimetableBtn) {
         createTimetableBtn.addEventListener('click', handleCreateTimetable);
     }
 
-    // Immediate save buttons
     if (savePeriodsBtn) {
         savePeriodsBtn.addEventListener('click', handleSavePeriods);
     }
@@ -695,7 +347,18 @@ function setupDataEntryEventListeners() {
         saveTeachersBtn.addEventListener('click', handleSaveTeachers);
     }
 
-    // File operation event listeners
+    if (saveStudentGroupsBtn) {
+        saveStudentGroupsBtn.addEventListener('click', handleSaveStudentGroups);
+    }
+
+    if (saveRoomsBtn) {
+        saveRoomsBtn.addEventListener('click', handleSaveRooms);
+    }
+
+    if (saveSubjectsBtn) {
+        saveSubjectsBtn.addEventListener('click', handleSaveSubjects);
+    }
+
     if (saveFileButton) {
         saveFileButton.addEventListener('click', handleSaveToFile);
     }
@@ -711,7 +374,6 @@ function setupDataEntryEventListeners() {
 
 /**
  * Handle Download timetable button click
- * Exports current timetable data to a JSON file
  */
 function handleSaveToFile() {
     if (exportToFile()) {
@@ -721,12 +383,11 @@ function handleSaveToFile() {
 
 /**
  * Handle Load from File button click
- * Opens file picker for JSON file selection
  */
 function handleLoadFromFile() {
     const fileInput = $('#file-input');
     if (fileInput) {
-        fileInput.value = ''; // Reset to allow re-selecting same file
+        fileInput.value = '';
         fileInput.click();
     }
 }
@@ -742,19 +403,16 @@ async function handleFileSelected(event) {
     try {
         const text = await file.text();
 
-        // Check if data already exists and ask for confirmation
         if (hasExistingData()) {
             if (!confirm('Importing this file will replace your current timetable. All existing data will be lost. Continue?')) {
                 return;
             }
         }
 
-        // Import the file
         const result = importFromFile(text);
 
         if (result.success) {
             showFileStatus('Timetable imported successfully', false);
-            // Reinitialize the page to show imported data
             initDataEntryPage();
         } else {
             showFileStatus(result.error, true);
@@ -775,7 +433,6 @@ function showFileStatus(message, isError) {
         statusEl.textContent = message;
         statusEl.className = 'file-status ' + (isError ? 'error' : 'success');
 
-        // Auto-dismiss after 3 seconds
         setTimeout(() => {
             if (statusEl.textContent === message) {
                 statusEl.textContent = '';
@@ -799,6 +456,11 @@ function clearFileStatus() {
 // Export for Node.js testing (ignored in browser)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        entitiesToText
+        entitiesToText,
+        buildRemovalWarning,
+        handleSaveTeachers,
+        handleSaveStudentGroups,
+        handleSaveRooms,
+        handleSaveSubjects,
     };
 }

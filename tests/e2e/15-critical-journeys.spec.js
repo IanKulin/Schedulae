@@ -12,15 +12,12 @@ test('full workflow: setup → fill → conflict → resolve → export → impo
     await page.fill('#teachers-input', 'Ms. Smith\nMr. Jones');
     await page.click('#save-teachers-btn');
     // 4. Add student group, room, subject
-    await page.locator('#student-groups-add-btn button.add-entity-btn').click();
-    await page.locator('#student-groups-list input.entity-edit-input').fill('Class A');
-    await page.locator('#student-groups-list input.entity-edit-input').press('Enter');
-    await page.locator('#rooms-add-btn button.add-entity-btn').click();
-    await page.locator('#rooms-list input.entity-edit-input').fill('Room 1');
-    await page.locator('#rooms-list input.entity-edit-input').press('Enter');
-    await page.locator('#subjects-add-btn button.add-entity-btn').click();
-    await page.locator('#subjects-list input.entity-edit-input').fill('Maths');
-    await page.locator('#subjects-list input.entity-edit-input').press('Enter');
+    await page.fill('#student-groups-input', 'Class A');
+    await page.click('#save-student-groups-btn');
+    await page.fill('#rooms-input', 'Room 1');
+    await page.click('#save-rooms-btn');
+    await page.fill('#subjects-input', 'Maths');
+    await page.click('#save-subjects-btn');
     // 5. Go to builder and fill some cells
     await page.click('#nav-builder');
     const groupDropdowns = page.locator('select.cell-dropdown[data-field="studentGroupId"]');

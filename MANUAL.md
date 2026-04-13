@@ -44,12 +44,10 @@ On the same Setup page, you'll find separate sections for:
 - **Subjects** — what is being taught (e.g. *Mathematics*, *English*, *PE*)
 
 For each section:
-- Click **+ Add** to add a new item.
-- Type the name and press **Enter** or click **Save**.
-- To rename an item, click **Edit** next to it, change the name, and click **Save**.
-- To remove an item, click **Delete**. If the item is already used in the timetable, you'll be told how many slots will be affected.
+- Type each name in the text area, one name per line.
+- Click the **Save** button for that section.
 
-Changes save automatically as you go.
+If you remove a name that is already used in the timetable, you'll be warned how many slots will be affected and asked to confirm before the change is saved.
 
 ---
 
