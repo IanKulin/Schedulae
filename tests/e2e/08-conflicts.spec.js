@@ -107,6 +107,39 @@ test('three-way conflict highlights all three cells', async ({ page }) => {
     await expect(conflictCells).toHaveCount(3);
 });
 
+test('tooltip text names the conflicting entity and the other teacher', async ({ page }) => {
+    await seedData(page, makeConflictData());
+    const groupId = '1';
+    const groupDropdowns = page.locator('select.cell-dropdown[data-field="studentGroupId"]');
+    await groupDropdowns.nth(0).selectOption(groupId);
+    await waitForSave(page);
+    await groupDropdowns.nth(1).selectOption(groupId);
+    await waitForSave(page);
+    const conflictCell = page.locator('.cell-conflict').first();
+    await conflictCell.hover();
+    const tooltip = page.locator('.conflict-tooltip');
+    await expect(tooltip).toBeVisible();
+    // Tooltip should mention the conflicting entity name and the other teacher
+    await expect(tooltip).toContainText('Class A');
+    await expect(tooltip).toContainText(/Ms\. Smith|Mr\. Jones/);
+});
+
+test('conflicting dropdown gets dropdown-conflict class', async ({ page }) => {
+    await seedData(page, makeConflictData());
+    const groupId = '1';
+    const groupDropdowns = page.locator('select.cell-dropdown[data-field="studentGroupId"]');
+    await groupDropdowns.nth(0).selectOption(groupId);
+    await waitForSave(page);
+    await groupDropdowns.nth(1).selectOption(groupId);
+    await waitForSave(page);
+    // Both student-group dropdowns in the conflicting cells should have dropdown-conflict
+    const conflictDropdowns = page.locator('select.cell-dropdown[data-field="studentGroupId"].dropdown-conflict');
+    await expect(conflictDropdowns).toHaveCount(2);
+    // Room dropdowns should NOT have dropdown-conflict (room is not conflicting)
+    const roomConflictDropdowns = page.locator('select.cell-dropdown[data-field="roomId"].dropdown-conflict');
+    await expect(roomConflictDropdowns).toHaveCount(0);
+});
+
 test('blank fields do not cause conflict', async ({ page }) => {
     await seedData(page, makeConflictData());
     // Both cells at Monday P1 blank by default
