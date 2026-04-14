@@ -1,6 +1,7 @@
 services:
   schedulae:
-    build: .
+    container_name: schedulae
+    image: ghcr.io/iankulin/schedulae
     ports:
       - "3000:3000"
     restart: unless-stopped
