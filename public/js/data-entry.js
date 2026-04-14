@@ -280,8 +280,9 @@ function handleCreateTimetable() {
     const periodsValue = $('#initial-periods').value;
     const periodCount = parseInt(periodsValue, 10);
 
-    if (isNaN(periodCount) || periodCount < 1 || periodCount > 12) {
-        showFieldError('initial-periods', 'Periods must be between 1 and 12');
+    const periodsError = validatePeriods(periodsValue);
+    if (periodsError) {
+        showFieldError('initial-periods', periodsError);
         return;
     }
 

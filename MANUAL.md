@@ -139,5 +139,5 @@ To restore a backup, or to move your timetable to a different browser:
 
 - The timetable covers **Monday to Friday** only.
 - Each slot can only have **one teacher, one student group, one room, and one subject**. Block periods and team teaching are not currently supported.
-- You can have a maximum of **12 periods per day**.
+- You can have a maximum of **20 periods per day**.
 - The app is designed for **desktop browsers**. Mobile browsers are not officially supported.

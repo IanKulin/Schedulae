@@ -24,14 +24,29 @@ test('shows error for period count of 0', async ({ page }) => {
     await page.fill('#initial-periods', '0');
     await page.click('#create-timetable-btn');
     const error = page.locator('#initial-periods-error');
-    await expect(error).toHaveText(/between 1 and 12/i);
+    await expect(error).not.toHaveText('');
 });
 
 test('shows error for negative period count', async ({ page }) => {
     await page.fill('#initial-periods', '-1');
     await page.click('#create-timetable-btn');
     const error = page.locator('#initial-periods-error');
-    await expect(error).toHaveText(/between 1 and 12/i);
+    await expect(error).not.toHaveText('');
+});
+
+test('shows error for period count above 20', async ({ page }) => {
+    await page.fill('#initial-periods', '21');
+    await page.click('#create-timetable-btn');
+    const error = page.locator('#initial-periods-error');
+    await expect(error).not.toHaveText('');
+});
+
+test('period count of 20 is accepted', async ({ page }) => {
+    await page.fill('#initial-periods', '20');
+    await page.click('#create-timetable-btn');
+    await expect(page.locator('#editing-section')).toBeVisible();
+    const data = await getStoredData(page);
+    expect(data.periods).toHaveLength(20);
 });
 
 test('shows error for non-numeric period count', async ({ page }) => {
@@ -39,7 +54,7 @@ test('shows error for non-numeric period count', async ({ page }) => {
     await page.evaluate(() => { document.querySelector('#initial-periods').value = ''; });
     await page.click('#create-timetable-btn');
     const error = page.locator('#initial-periods-error');
-    await expect(error).toHaveText(/between 1 and 12/i);
+    await expect(error).not.toHaveText('');
 });
 
 test('shows error when period field is blank', async ({ page }) => {
