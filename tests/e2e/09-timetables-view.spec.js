@@ -117,6 +117,20 @@ test('room timetable shows Teacher, Class, Subject labels in filled cells', asyn
     await expect(labels.filter({ hasText: 'Subject:' })).toHaveCount(1);
 });
 
+test('individual timetable grid has days across the top and periods down the side', async ({ page }) => {
+    await page.locator('#section-teachers summary').click();
+    await page.locator('#teachers-timetable-list .timetable-entity-link').first().click();
+    const grid = page.locator('#individual-timetable-grid');
+    // Day headers should appear in the first row (after the corner cell)
+    const dayHeaders = grid.locator('.individual-grid-header');
+    await expect(dayHeaders).toHaveCount(5);
+    const headerTexts = await dayHeaders.allTextContents();
+    expect(headerTexts).toEqual(expect.arrayContaining(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']));
+    // Period row headers should appear down the side — one per period
+    const periodHeaders = grid.locator('.individual-grid-row-header');
+    await expect(periodHeaders).toHaveCount(2); // beforeEach uses periodCount: 2
+});
+
 test('back link returns to timetables page', async ({ page }) => {
     await page.locator('#section-teachers summary').click();
     await page.locator('#teachers-timetable-list .timetable-entity-link').first().click();
