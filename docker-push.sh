@@ -9,6 +9,7 @@ MINOR=$(echo "$VERSION" | cut -d. -f2)
 
 echo "Building $IMAGE:$VERSION ..."
 docker build \
+  --platform linux/amd64 \
   -t "$IMAGE:$VERSION" \
   -t "$IMAGE:$MAJOR.$MINOR" \
   -t "$IMAGE:$MAJOR" \
